@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chatly_plus_example/chatly_plus/src/chatly_chat_core.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 // AUTH STATE
 @immutable
@@ -56,20 +58,37 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       state = const AuthLoading();
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-      // Firebase handles state update through authStateChanges stream
     } on FirebaseAuthException catch (e) {
       state = AuthError(e.message ?? 'Sign in failed');
     }
   }
 
-  Future<void> signUpWithEmailAndPassword(
-      String email, String password) async {
+  Future<void> signUpWithEmailAndPassword({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String imageUrl,
+  }) async {
     try {
       state = const AuthLoading();
-      await _auth.createUserWithEmailAndPassword(
-          email: email, password: password);
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      await ChatlyChatCore.instance.createUserInFirestore(
+        types.User(
+          id: credential.user!.uid,
+          firstName: firstName,
+          lastName: lastName,
+          imageUrl: imageUrl,
+        ),
+      );
     } on FirebaseAuthException catch (e) {
       state = AuthError(e.message ?? 'Sign up failed');
+    } catch (e) {
+      state = AuthError('An unexpected error occurred');
     }
   }
 

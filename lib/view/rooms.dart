@@ -3,9 +3,10 @@ import 'package:chatly_plus_example/controller/selected_room_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'chat.dart';
+import 'chat/chat.dart';
 
 class RoomsPage extends ConsumerStatefulWidget {
   const RoomsPage({super.key});
@@ -31,8 +32,11 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: isSelected
-            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+        color: isSelected && isLargeScreen
+            ? Theme.of(context)
+                .colorScheme
+                .primaryContainer
+                .withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
       ),
@@ -64,11 +68,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           if (isLargeScreen) {
             ref.read(selectedRoomProvider.notifier).state = room;
           } else {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => ChatPage(room: room),
-              ),
-            );
+            context.go("/chat", extra: room);
           }
         },
       ),
@@ -128,12 +128,14 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              IconButton(icon: const Icon(Icons.search), onPressed: () {}),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),
                 onSelected: (value) {
                   if (value == 'logout') {
                     logout();
+                  }
+                  if (value == 'users') {
+                    context.go("/users");
                   }
                 },
                 itemBuilder: (BuildContext context) => [
@@ -142,11 +144,20 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
                     child: Text('Logout'),
                   ),
                   const PopupMenuItem<String>(
-                    value: 'logout',
-                    child: Text('Logout'),
+                    value: 'Setting',
+                    child: Text('Setting'),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'users',
+                    child: Text('Users'),
                   ),
                 ],
               ),
+              IconButton(
+                  onPressed: () {
+                    Text("Hello world!");
+                  },
+                  icon: Icon(Icons.logout))
             ],
           ),
         ),
@@ -184,36 +195,40 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isLargeScreen = constraints.maxWidth >= 800;
-          if (!isLargeScreen) {
-            return _buildRoomsList();
-          } else {
-            return Row(
-              children: [
-                Container(
-                  width: 320,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      right: BorderSide(
-                        color: Theme.of(context).colorScheme.onTertiary,
-                        width: 1,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isLargeScreen = constraints.maxWidth >= 800;
+            if (!isLargeScreen) {
+              return _buildRoomsList();
+            } else {
+              return Row(
+                children: [
+                  Container(
+                    width: 320,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(
+                          color: Theme.of(context).colorScheme.onTertiary,
+                          width: 1,
+                        ),
                       ),
                     ),
+                    child: _buildRoomsList(),
                   ),
-                  child: _buildRoomsList(),
-                ),
-                Expanded(
-                  child: ref.read(selectedRoomProvider.notifier).state == null
-                      ? _buildEmptyState()
-                      : ChatPage(
-                          room: ref.read(selectedRoomProvider.notifier).state!),
-                ),
-              ],
-            );
-          }
-        },
+                  Expanded(
+                    child: ref.read(selectedRoomProvider.notifier).state == null
+                        ? _buildEmptyState()
+                        : ChatPage(
+                            room:
+                                ref.read(selectedRoomProvider.notifier).state!,
+                          ),
+                  ),
+                ],
+              );
+            }
+          },
+        ),
       ),
     );
   }

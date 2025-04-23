@@ -1,170 +1,263 @@
-import 'package:chatly_plus_example/chatly_plus/src/chatly_chat_core.dart';
-import 'package:faker/faker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:chatly_plus_example/controller/auth_controller.dart';
+import 'package:chatly_plus_example/core/const/size_const.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
-  String? _email;
-  String? _firstName;
-  FocusNode? _focusNode;
-  String? _lastName;
-  TextEditingController? _passwordController;
-  bool _registering = false;
-  TextEditingController? _usernameController;
+class _RegisterPageState extends ConsumerState<RegisterPage> {
+  final _formKey = GlobalKey<FormState>();
 
-  @override
-  void initState() {
-    super.initState();
-    final faker = Faker();
-    _firstName = faker.person.firstName();
-    _lastName = faker.person.lastName();
-    _email =
-        '${_firstName!.toLowerCase()}.${_lastName!.toLowerCase()}@${faker.internet.domainName()}';
-    _focusNode = FocusNode();
-    _passwordController = TextEditingController(text: 'Qawsed1-');
-    _usernameController = TextEditingController(
-      text: _email,
-    );
-  }
-
-  void _register() async {
-    FocusScope.of(context).unfocus();
-
-    setState(() {
-      _registering = true;
-    });
-
-    try {
-      final credential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _usernameController!.text,
-        password: _passwordController!.text,
-      );
-      await ChatlyChatCore.instance.createUserInFirestore(
-        types.User(
-          firstName: _firstName,
-          id: credential.user!.uid,
-          imageUrl: 'https://i.pravatar.cc/300?u=$_email',
-          lastName: _lastName,
-        ),
-      );
-
-      if (!mounted) return;
-      Navigator.of(context)
-        ..pop()
-        ..pop();
-    } catch (e) {
-      setState(() {
-        _registering = false;
-      });
-
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-          content: Text(
-            e.toString(),
-          ),
-          title: const Text('Error'),
-        ),
-      );
-    }
-  }
+  final firstNameController = TextEditingController();
+  final lastNameController = TextEditingController();
+  final imageUrlController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final FocusNode _passwordFocusNode = FocusNode();
 
   @override
   void dispose() {
-    _focusNode?.dispose();
-    _passwordController?.dispose();
-    _usernameController?.dispose();
+    firstNameController.dispose();
+    lastNameController.dispose();
+    imageUrlController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
+  void _register() {
+    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+
+    ref.read(authControllerProvider.notifier).signUpWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+          firstName: firstNameController.text.trim(),
+          lastName: lastNameController.text.trim(),
+          imageUrl: imageUrlController.text.trim(),
+        );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Registration Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          systemOverlayStyle: SystemUiOverlayStyle.light,
-          title: const Text('Register'),
-        ),
-        body: SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.only(top: 80, left: 24, right: 24),
-            child: Column(
-              children: [
-                TextField(
-                  autocorrect: false,
-                  autofillHints: _registering ? null : [AutofillHints.email],
-                  autofocus: true,
-                  controller: _usernameController,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(8),
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final isLoading = authState is AuthLoading;
+
+    if (authState is AuthError) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showErrorDialog(authState.message);
+      });
+    }
+
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmallScreen = constraints.maxWidth < 600;
+
+          return Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Container(
+                  padding: const EdgeInsets.all(25),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: SizeConst.kBorderRadius,
+                    boxShadow: [
+                      BoxShadow(
+                        offset: const Offset(0, 2),
+                        blurRadius: 10,
+                        color: Theme.of(context)
+                            .shadowColor
+                            .withValues(alpha: 0.1),
                       ),
-                    ),
-                    labelText: 'Email',
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.cancel),
-                      onPressed: () => _usernameController?.clear(),
-                    ),
+                    ],
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  onEditingComplete: () {
-                    _focusNode?.requestFocus();
-                  },
-                  readOnly: _registering,
-                  textCapitalization: TextCapitalization.none,
-                  textInputAction: TextInputAction.next,
+                  child: _buildRegisterForm(context, isLoading),
                 ),
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: TextField(
-                    autocorrect: false,
-                    autofillHints:
-                        _registering ? null : [AutofillHints.password],
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(8),
-                        ),
-                      ),
-                      labelText: 'Password',
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.cancel),
-                        onPressed: () => _passwordController?.clear(),
-                      ),
-                    ),
-                    focusNode: _focusNode,
-                    keyboardType: TextInputType.emailAddress,
-                    obscureText: true,
-                    onEditingComplete: _register,
-                    textCapitalization: TextCapitalization.none,
-                    textInputAction: TextInputAction.done,
-                  ),
-                ),
-                TextButton(
-                  onPressed: _registering ? null : _register,
-                  child: const Text('Register'),
-                ),
-              ],
+              ),
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRegisterForm(BuildContext context, bool isLoading) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 24),
+        Text(
+          'Create an account',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Fill the details to get started',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+        Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: firstNameController,
+                decoration: const InputDecoration(
+                  labelText: 'First Name',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                textInputAction: TextInputAction.next,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter first name' : null,
+                enabled: !isLoading,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: lastNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Last Name',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                textInputAction: TextInputAction.next,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter last name' : null,
+                enabled: !isLoading,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: imageUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'Image URL',
+                  prefixIcon: Icon(Icons.image_outlined),
+                ),
+                textInputAction: TextInputAction.next,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter image URL' : null,
+                enabled: !isLoading,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Enter email';
+                  if (!value.contains('@')) return 'Enter valid email';
+                  return null;
+                },
+                enabled: !isLoading,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: passwordController,
+                focusNode: _passwordFocusNode,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+                textInputAction: TextInputAction.done,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Enter password';
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+                onFieldSubmitted: (_) => isLoading ? null : _register(),
+                enabled: !isLoading,
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: isLoading ? null : _register,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Register'),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'OR',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton(
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        context.go('/login');
+                      },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Back to Sign In'),
+              ),
+            ],
           ),
         ),
-      );
+      ],
+    );
+  }
 }

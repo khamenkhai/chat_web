@@ -38,7 +38,6 @@ dependencies:
   firebase_auth: ^5.5.1
   cloud_firestore: ^5.6.5
   flutter_chat_ui: ^1.6.15
-  faker: ^2.2.0
   firebase_storage: ^12.4.4
   file_picker: ^8.3.2
   image_picker: ^1.1.2

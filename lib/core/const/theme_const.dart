@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 @immutable
 class AppTheme {
   // System UI Overlay Styles
-  static const SystemUiOverlayStyle _lightSystemOverlayStyle = SystemUiOverlayStyle(
+  static const SystemUiOverlayStyle _lightSystemOverlayStyle =
+      SystemUiOverlayStyle(
     statusBarBrightness: Brightness.dark,
     statusBarIconBrightness: Brightness.dark,
     statusBarColor: Colors.transparent,
@@ -12,7 +13,8 @@ class AppTheme {
     systemNavigationBarIconBrightness: Brightness.dark,
   );
 
-  static const SystemUiOverlayStyle _darkSystemOverlayStyle = SystemUiOverlayStyle(
+  static const SystemUiOverlayStyle _darkSystemOverlayStyle =
+      SystemUiOverlayStyle(
     statusBarBrightness: Brightness.light,
     statusBarIconBrightness: Brightness.light,
     statusBarColor: Colors.transparent,
@@ -30,7 +32,7 @@ class AppTheme {
   static const Color _muted = Color(0xFFF1F5F9); // Slate-100
   static const Color _mutedForeground = Color(0xFF64748B); // Slate-500
   // static const Color _accent = Color(0xFFE2E8F0); // Slate-200
-  // static const Color _accentForeground = Color(0xFF0F172A); // Slate-900
+  // static const Color _accentForeground = Color(0xFF0F172A); 
 
   // Dark mode variants
   static const Color _darkPrimary = Color(0xFF60A5FA); // Blue-400
@@ -51,42 +53,42 @@ class AppTheme {
   static TextTheme _buildTextTheme(Color textColor, Color mutedColor) {
     return TextTheme(
       displayLarge: _baseTextStyle.copyWith(
-        fontSize: 48, fontWeight: FontWeight.bold, color: textColor),
+          fontSize: 48, fontWeight: FontWeight.bold, color: textColor),
       displayMedium: _baseTextStyle.copyWith(
-        fontSize: 36, fontWeight: FontWeight.bold, color: textColor),
+          fontSize: 36, fontWeight: FontWeight.bold, color: textColor),
       displaySmall: _baseTextStyle.copyWith(
-        fontSize: 30, fontWeight: FontWeight.bold, color: textColor),
+          fontSize: 30, fontWeight: FontWeight.bold, color: textColor),
       headlineLarge: _baseTextStyle.copyWith(
-        fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
+          fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
       headlineMedium: _baseTextStyle.copyWith(
-        fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+          fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
       headlineSmall: _baseTextStyle.copyWith(
-        fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+          fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
       titleLarge: _baseTextStyle.copyWith(
-        fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
+          fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
       titleMedium: _baseTextStyle.copyWith(
-        fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
+          fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
       titleSmall: _baseTextStyle.copyWith(
-        fontSize: 12, fontWeight: FontWeight.w600, color: textColor),
+          fontSize: 12, fontWeight: FontWeight.w600, color: textColor),
       bodyLarge: _baseTextStyle.copyWith(
-        fontSize: 16, fontWeight: FontWeight.normal, color: textColor),
+          fontSize: 16, fontWeight: FontWeight.normal, color: textColor),
       bodyMedium: _baseTextStyle.copyWith(
-        fontSize: 14, fontWeight: FontWeight.normal, color: textColor),
+          fontSize: 14, fontWeight: FontWeight.normal, color: textColor),
       bodySmall: _baseTextStyle.copyWith(
-        fontSize: 12, fontWeight: FontWeight.normal, color: textColor),
+          fontSize: 12, fontWeight: FontWeight.normal, color: textColor),
       labelLarge: _baseTextStyle.copyWith(
-        fontSize: 14, fontWeight: FontWeight.w500, color: mutedColor),
+          fontSize: 14, fontWeight: FontWeight.w500, color: mutedColor),
       labelMedium: _baseTextStyle.copyWith(
-        fontSize: 12, fontWeight: FontWeight.w500, color: mutedColor),
+          fontSize: 12, fontWeight: FontWeight.w500, color: mutedColor),
       labelSmall: _baseTextStyle.copyWith(
-        fontSize: 10, fontWeight: FontWeight.w500, color: mutedColor),
+          fontSize: 10, fontWeight: FontWeight.w500, color: mutedColor),
     );
   }
 
   // Light Theme
   static ThemeData light({String? fontFamily}) {
     final textTheme = _buildTextTheme(Colors.black, _mutedForeground);
-    
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -97,11 +99,8 @@ class AppTheme {
         onSecondary: _secondaryForeground,
         error: _destructive,
         onError: _destructiveForeground,
-        background: Colors.white,
-        onBackground: Colors.black,
         surface: Colors.white,
         onSurface: Colors.black,
-        surfaceVariant: _muted,
         onSurfaceVariant: _mutedForeground,
       ),
       scaffoldBackgroundColor: Colors.white,
@@ -182,7 +181,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: _muted,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6),
           borderSide: BorderSide.none,
@@ -207,8 +207,8 @@ class AppTheme {
         hintStyle: textTheme.bodyMedium?.copyWith(color: _mutedForeground),
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return _primary;
           }
           return Colors.transparent;
@@ -217,26 +217,26 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
-        checkColor: MaterialStateProperty.all(_primaryForeground),
+        checkColor: WidgetStateProperty.all(_primaryForeground),
       ),
       radioTheme: RadioThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return _primary;
           }
           return Colors.transparent;
         }),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return _primary;
           }
           return const Color(0xFFE2E8F0);
         }),
-        trackColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
-            return _primary.withOpacity(0.5);
+        trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return _primary.withValues(alpha: 0.5);
           }
           return const Color(0xFFE2E8F0);
         }),
@@ -266,7 +266,8 @@ class AppTheme {
         secondarySelectedColor: _primary,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         labelStyle: textTheme.labelMedium?.copyWith(color: Colors.black),
-        secondaryLabelStyle: textTheme.labelMedium?.copyWith(color: _primaryForeground),
+        secondaryLabelStyle:
+            textTheme.labelMedium?.copyWith(color: _primaryForeground),
         brightness: Brightness.light,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -294,7 +295,7 @@ class AppTheme {
   // Dark Theme
   static ThemeData dark({String? fontFamily}) {
     final textTheme = _buildTextTheme(Colors.white, _darkMutedForeground);
-    
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -305,17 +306,14 @@ class AppTheme {
         onSecondary: _darkSecondaryForeground,
         error: _destructive,
         onError: _destructiveForeground,
-        background: const Color(0xFF020617), // Slate-950
-        onBackground: Colors.white,
-        surface: const Color(0xFF0F172A), // Slate-900
+        surface: const Color(0xFF0F172A), 
         onSurface: Colors.white,
-        surfaceVariant: _darkMuted,
         onSurfaceVariant: _darkMutedForeground,
       ),
       scaffoldBackgroundColor: const Color(0xFF020617), // Slate-950
       appBarTheme: AppBarTheme(
         systemOverlayStyle: _darkSystemOverlayStyle,
-        backgroundColor: const Color(0xFF0F172A), // Slate-900
+        backgroundColor: const Color(0xFF0F172A), 
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -328,7 +326,8 @@ class AppTheme {
       textTheme: textTheme,
       primaryTextTheme: textTheme.copyWith(
         bodyLarge: textTheme.bodyLarge?.copyWith(color: _darkPrimaryForeground),
-        bodyMedium: textTheme.bodyMedium?.copyWith(color: _darkPrimaryForeground),
+        bodyMedium:
+            textTheme.bodyMedium?.copyWith(color: _darkPrimaryForeground),
       ),
       iconTheme: const IconThemeData(color: Colors.white),
       dividerTheme: const DividerThemeData(
@@ -337,12 +336,13 @@ class AppTheme {
         space: 1,
       ),
       cardTheme: CardTheme(
-        color: const Color(0xFF0F172A), // Slate-900
+        color: const Color(0xFF0F172A), 
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Color(0xFF1E293B), width: 1), // Slate-800
+          side:
+              const BorderSide(color: Color(0xFF1E293B), width: 1), // Slate-800
         ),
       ),
       buttonTheme: const ButtonThemeData(
@@ -390,7 +390,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: _darkMuted,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6),
           borderSide: BorderSide.none,
@@ -415,8 +416,8 @@ class AppTheme {
         hintStyle: textTheme.bodyMedium?.copyWith(color: _darkMutedForeground),
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return _darkPrimary;
           }
           return Colors.transparent;
@@ -425,32 +426,32 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
-        checkColor: MaterialStateProperty.all(_darkPrimaryForeground),
+        checkColor: WidgetStateProperty.all(_darkPrimaryForeground),
       ),
       radioTheme: RadioThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return _darkPrimary;
           }
           return Colors.transparent;
         }),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return _darkPrimary;
           }
           return const Color(0xFF334155); // Slate-700
         }),
-        trackColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
-            return _darkPrimary.withOpacity(0.5);
+        trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return _darkPrimary.withValues(alpha: 0.5);
           }
           return const Color(0xFF334155); // Slate-700
         }),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: const Color(0xFF0F172A), // Slate-900
+        backgroundColor: const Color(0xFF0F172A), 
         selectedItemColor: _darkPrimary,
         unselectedItemColor: _darkMutedForeground,
         elevation: 0,
@@ -459,11 +460,12 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: const Color(0xFF0F172A), // Slate-900
+        backgroundColor: const Color(0xFF0F172A), 
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFF1E293B), width: 1), // Slate-800
+          side:
+              const BorderSide(color: Color(0xFF1E293B), width: 1), // Slate-800
         ),
         titleTextStyle: textTheme.titleLarge,
         contentTextStyle: textTheme.bodyMedium,
@@ -475,8 +477,8 @@ class AppTheme {
         secondarySelectedColor: _darkPrimary,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         labelStyle: textTheme.labelMedium?.copyWith(color: Colors.white),
-        secondaryLabelStyle: textTheme.labelMedium?.copyWith(
-          color: _darkPrimaryForeground),
+        secondaryLabelStyle:
+            textTheme.labelMedium?.copyWith(color: _darkPrimaryForeground),
         brightness: Brightness.dark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -490,11 +492,12 @@ class AppTheme {
         textStyle: textTheme.bodySmall?.copyWith(color: Colors.black),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: const Color(0xFF0F172A), // Slate-900
+        color: const Color(0xFF0F172A), 
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Color(0xFF1E293B), width: 1), // Slate-800
+          side:
+              const BorderSide(color: Color(0xFF1E293B), width: 1), // Slate-800
         ),
         textStyle: textTheme.bodyMedium,
       ),

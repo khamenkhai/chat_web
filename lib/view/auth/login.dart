@@ -14,7 +14,8 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final FocusNode _passwordFocusNode = FocusNode();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController(text: 'password');
+  final TextEditingController _passwordController =
+      TextEditingController(text: 'password');
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -28,11 +29,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    
+
     await ref.read(authControllerProvider.notifier).signInWithEmailAndPassword(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-    );
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
 
     // Handle navigation if authenticated
     final authState = ref.read(authControllerProvider);
@@ -88,7 +89,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       BoxShadow(
                         offset: const Offset(0, 2),
                         blurRadius: 10,
-                        color: Theme.of(context).shadowColor.withOpacity(0.1),
+                        color: Theme.of(context)
+                            .shadowColor
+                            .withValues(alpha: 0.1),
                       ),
                     ],
                   ),
@@ -133,18 +136,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   labelText: 'Email',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8)),
                   suffixIcon: _emailController.text.isEmpty
                       ? null
                       : IconButton(
                           icon: const Icon(Icons.clear),
-                          onPressed: isLoading ? null : () => _emailController.clear(),
+                          onPressed:
+                              isLoading ? null : () => _emailController.clear(),
                         ),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please enter your email';
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
                   if (!value.contains('@')) return 'Please enter a valid email';
                   return null;
                 },
@@ -160,17 +166,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   labelText: 'Password',
                   prefixIcon: const Icon(Icons.lock_outline),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8)),
                   suffixIcon: _passwordController.text.isEmpty
                       ? null
                       : IconButton(
                           icon: const Icon(Icons.clear),
-                          onPressed: isLoading ? null : () => _passwordController.clear(),
+                          onPressed: isLoading
+                              ? null
+                              : () => _passwordController.clear(),
                         ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please enter your password';
-                  if (value.length < 6) return 'Password must be at least 6 characters';
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
                   return null;
                 },
                 onFieldSubmitted: (_) => isLoading ? null : _login(),
@@ -190,7 +202,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 child: isLoading
                     ? const SizedBox(
@@ -221,11 +233,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
               const SizedBox(height: 24),
               OutlinedButton(
-                onPressed: isLoading ? null : () => context.go('/register'),
+                onPressed: () {
+                  context.go("/register");
+                },
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 child: const Text('Create an account'),
               ),
