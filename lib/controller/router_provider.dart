@@ -1,9 +1,9 @@
-import 'package:chatly_plus_example/controller/auth_controller.dart';
-import 'package:chatly_plus_example/view/auth/login.dart';
-import 'package:chatly_plus_example/view/auth/register.dart';
-import 'package:chatly_plus_example/view/chat/chat.dart';
-import 'package:chatly_plus_example/view/rooms.dart';
-import 'package:chatly_plus_example/view/users.dart';
+import 'package:chat_web/controller/auth_controller.dart';
+import 'package:chat_web/view/auth/login.dart';
+import 'package:chat_web/view/auth/register.dart';
+import 'package:chat_web/view/chat/chat.dart';
+import 'package:chat_web/view/rooms.dart';
+import 'package:chat_web/view/users.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

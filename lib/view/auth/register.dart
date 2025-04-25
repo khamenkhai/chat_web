@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:chatly_plus_example/controller/auth_controller.dart';
-import 'package:chatly_plus_example/core/const/size_const.dart';
+import 'package:chat_web/controller/auth_controller.dart';
+import 'package:chat_web/core/const/size_const.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});

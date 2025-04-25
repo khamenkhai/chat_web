@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:chatly_plus_example/core/const/color_const.dart';
+import 'package:chat_web/core/const/color_const.dart';
 
 class CustomElevatedButton extends StatelessWidget {
   final Color fgColor;

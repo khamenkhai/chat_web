@@ -1,8 +1,8 @@
 // import 'package:flutter/material.dart';
 // import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:chatly_plus_example/controller/internet_cubit/internet_connection_cubit.dart';
-// import 'package:chatly_plus_example/core/component/internet_error.dart';
-// import 'package:chatly_plus_example/core/component/loading_widget.dart';
+// import 'package:chat_web/controller/internet_cubit/internet_connection_cubit.dart';
+// import 'package:chat_web/core/component/internet_error.dart';
+// import 'package:chat_web/core/component/loading_widget.dart';
 
 // class InternetCheckWidget extends StatelessWidget {
 //   const InternetCheckWidget({super.key, required this.child,required this.onRefresh});

@@ -48,7 +48,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:87674806781:android:6a61dd5e1fb9a48c46b994",
         "android_client_info": {
-          "package_name": "com.example.chatly_plus_example"
+          "package_name": "com.example.chat_web"
         }
       },
       "oauth_client": [],

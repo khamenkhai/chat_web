@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:chatly_plus_example/core/component/loading_widget.dart';
 
 class CustomNetworkImage extends StatelessWidget {
   final String imageUrl;
@@ -22,6 +22,13 @@ class CustomNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Image.network(
+      imageUrl,
+      errorBuilder: (context, error, stackTrace) {
+        return const Icon(Icons.error); // or a placeholder image
+      },
+    );
+
     return CachedNetworkImage(
       imageUrl: imageUrl,
       width: width ?? 100,

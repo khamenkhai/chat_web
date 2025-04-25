@@ -1,6 +1,6 @@
-import 'package:chatly_plus_example/controller/router_provider.dart';
-import 'package:chatly_plus_example/controller/theme_controller.dart';
-import 'package:chatly_plus_example/core/const/theme_const.dart';
+import 'package:chat_web/controller/router_provider.dart';
+import 'package:chat_web/controller/theme_controller.dart';
+import 'package:chat_web/core/const/theme_const.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

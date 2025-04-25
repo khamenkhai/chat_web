@@ -1,5 +1,5 @@
-import 'package:chatly_plus_example/chatly_plus/src/chatly_chat_core.dart';
-import 'package:chatly_plus_example/controller/selected_room_controller.dart';
+import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
+import 'package:chat_web/controller/selected_room_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'chat/chat.dart';
+
+// same imports...
 
 class RoomsPage extends ConsumerStatefulWidget {
   const RoomsPage({super.key});
@@ -16,11 +18,6 @@ class RoomsPage extends ConsumerStatefulWidget {
 }
 
 class _RoomsPageState extends ConsumerState<RoomsPage> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   void logout() async {
     await FirebaseAuth.instance.signOut();
   }
@@ -29,24 +26,21 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
     final isSelected = ref.watch(selectedRoomProvider) == room;
     final isLargeScreen = MediaQuery.of(context).size.width >= 800;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: isSelected && isLargeScreen
-            ? Theme.of(context)
-                .colorScheme
-                .primaryContainer
-                .withValues(alpha: 0.1)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.15)
+            : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           room.name ?? 'Unknown',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: FutureBuilder(
           future: ChatlyChatCore.instance.getLastMessage(room.id),
@@ -55,15 +49,18 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
               lastMsgSnap.data ?? "No messages yet",
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             );
           },
         ),
         trailing: Text(
           formatTimeAgo(room.updatedAt ?? 0),
-          style: const TextStyle(fontSize: 11),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         onTap: () {
           if (isLargeScreen) {
             ref.read(selectedRoomProvider.notifier).state = room;
@@ -77,32 +74,27 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.forum_outlined,
-            size: 48,
-            color: Theme.of(context).colorScheme.onSecondary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No room selected',
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.onPrimary,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.forum_outlined, size: 56, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 20),
+            Text(
+              'No room selected',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Select a room from the sidebar to start chatting',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSecondary,
+            const SizedBox(height: 8),
+            Text(
+              'Select a room from the sidebar to start chatting',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -116,48 +108,34 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: Theme.of(context).colorScheme.inversePrimary,
-                width: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 0.5,
               ),
             ),
           ),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'Chats',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              PopupMenuButton<String>(
+              IconButton(
                 icon: const Icon(Icons.more_vert),
+                onPressed: () {},
+                tooltip: "More options",
+              ),
+              PopupMenuButton<String>(
                 onSelected: (value) {
-                  if (value == 'logout') {
-                    logout();
-                  }
-                  if (value == 'users') {
-                    context.go("/users");
-                  }
+                  if (value == 'logout') logout();
+                  if (value == 'users') context.go("/users");
                 },
-                itemBuilder: (BuildContext context) => [
-                  const PopupMenuItem<String>(
-                    value: 'logout',
-                    child: Text('Logout'),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'Setting',
-                    child: Text('Setting'),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'users',
-                    child: Text('Users'),
-                  ),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'logout', child: Text('Logout')),
+                  const PopupMenuItem(value: 'Setting', child: Text('Setting')),
+                  const PopupMenuItem(value: 'users', child: Text('Users')),
                 ],
               ),
-              IconButton(
-                  onPressed: () {
-                    Text("Hello world!");
-                  },
-                  icon: Icon(Icons.logout))
             ],
           ),
         ),
@@ -170,13 +148,12 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
                 return Center(
                   child: Text(
                     'No rooms available',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSecondary,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 );
               }
-
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: snapshot.data!.length,
@@ -199,34 +176,29 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isLargeScreen = constraints.maxWidth >= 800;
-            if (!isLargeScreen) {
-              return _buildRoomsList();
-            } else {
-              return Row(
-                children: [
-                  Container(
-                    width: 320,
-                    decoration: BoxDecoration(
-                      border: Border(
-                        right: BorderSide(
-                          color: Theme.of(context).colorScheme.onTertiary,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: _buildRoomsList(),
-                  ),
-                  Expanded(
-                    child: ref.read(selectedRoomProvider.notifier).state == null
-                        ? _buildEmptyState()
-                        : ChatPage(
-                            room:
-                                ref.read(selectedRoomProvider.notifier).state!,
+            return isLargeScreen
+                ? Row(
+                    children: [
+                      Container(
+                        width: 500,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: BorderSide(
+                              color: Theme.of(context).colorScheme.outlineVariant,
+                              width: 0.5,
+                            ),
                           ),
-                  ),
-                ],
-              );
-            }
+                        ),
+                        child: _buildRoomsList(),
+                      ),
+                      Expanded(
+                        child: ref.watch(selectedRoomProvider) == null
+                            ? _buildEmptyState()
+                            : ChatPage(room: ref.watch(selectedRoomProvider)!),
+                      ),
+                    ],
+                  )
+                : _buildRoomsList();
           },
         ),
       ),

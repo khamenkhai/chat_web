@@ -1,4 +1,4 @@
-import 'package:chatly_plus_example/chatly_plus/src/chatly_chat_core.dart';
+import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;

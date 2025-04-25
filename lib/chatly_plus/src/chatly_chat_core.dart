@@ -417,6 +417,151 @@ class ChatlyChatCore {
     }
   }
 
+  /// Gets a single message by its ID from a specific room
+  Future<types.Message?> getMessageById({
+    required String roomId,
+    required String messageId,
+  }) async {
+    try {
+      debugPrint("=> Hello");
+      debugPrint("=> room id : $roomId");
+      debugPrint("=> message id : $messageId");
+
+      
+      final doc = await getFirebaseFirestore()
+          .collection('${config.roomsCollectionName}/$roomId/messages')
+          .doc(messageId)
+          .get();
+
+      print("=> message detail : ${doc.data()}");
+
+      if (!doc.exists) return null;
+
+      final data = doc.data() as Map<String, dynamic>;
+      final room = await getFirebaseFirestore()
+          .collection(config.roomsCollectionName)
+          .doc(roomId)
+          .get();
+
+      if (!room.exists) return null;
+
+      // Process the room to get users list
+      final processedRoom = await processRoomDocument(
+        room,
+        firebaseUser!,
+        getFirebaseFirestore(),
+        config.usersCollectionName,
+      );
+
+      // Find the author in room's users
+      final author = processedRoom.users.firstWhere(
+        (u) => u.id == data['authorId'],
+        orElse: () => types.User(id: data['authorId'] as String),
+      );
+
+      data['author'] = author.toJson();
+      data['createdAt'] =
+          (data['createdAt'] as Timestamp).millisecondsSinceEpoch;
+      data['id'] = doc.id;
+      data['updatedAt'] =
+          (data['updatedAt'] as Timestamp).millisecondsSinceEpoch;
+
+      // Handle seen status
+      final seenBy = data['seenBy'] as Map<String, dynamic>? ?? {};
+      final allUsersHaveSeen =
+          processedRoom.users.every((user) => seenBy.containsKey(user.id));
+
+      return types.Message.fromJson(data).copyWith(
+        metadata: {
+          ...data['metadata'] ?? {},
+          'seen': allUsersHaveSeen,
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting message by ID: $e');
+      }
+      return null;
+    }
+  }
+
+  void replyToMessage({
+    required dynamic partialMessage,
+    required String roomId,
+    required String originalMessageId,
+  }) async {
+    if (firebaseUser == null) return;
+
+    types.Message? message;
+
+    if (partialMessage is types.PartialCustom) {
+      message = types.CustomMessage.fromPartial(
+        author: types.User(id: firebaseUser!.uid),
+        id: '',
+        partialCustom: partialMessage,
+      );
+    } else if (partialMessage is types.PartialFile) {
+      message = types.FileMessage.fromPartial(
+        author: types.User(id: firebaseUser!.uid),
+        id: '',
+        partialFile: partialMessage,
+      );
+    } else if (partialMessage is types.PartialImage) {
+      message = types.ImageMessage.fromPartial(
+        author: types.User(id: firebaseUser!.uid),
+        id: '',
+        partialImage: partialMessage,
+      );
+    } else if (partialMessage is types.PartialText) {
+      message = types.TextMessage.fromPartial(
+        author: types.User(id: firebaseUser!.uid),
+        id: '',
+        partialText: partialMessage,
+      );
+    }
+
+    if (message != null) {
+      final messageMap = message.toJson();
+      messageMap.removeWhere((key, value) => key == 'author' || key == 'id');
+      messageMap['authorId'] = firebaseUser!.uid;
+      messageMap['createdAt'] = FieldValue.serverTimestamp();
+      messageMap['updatedAt'] = FieldValue.serverTimestamp();
+      messageMap['metadata'] = {
+        "isRepliedMessage": true,
+        "originalMessageId": originalMessageId
+      };
+      messageMap['seenBy'] = {
+        firebaseUser!.uid: FieldValue.serverTimestamp(),
+
+        /// Sender has seen the message
+      };
+
+      await getFirebaseFirestore()
+          .collection('${config.roomsCollectionName}/$roomId/messages')
+          .add(messageMap);
+
+      // Extract the text content of the message
+      String lastMessageText = '';
+      if (message is types.TextMessage) {
+        lastMessageText = message.text;
+      } else if (message is types.ImageMessage) {
+        lastMessageText = '📷 Image';
+      } else if (message is types.FileMessage) {
+        lastMessageText = '📄 File';
+      } else if (message is types.CustomMessage) {
+        lastMessageText = 'Custom Message';
+      }
+
+      await getFirebaseFirestore()
+          .collection(config.roomsCollectionName)
+          .doc(roomId)
+          .update({
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastMsg': lastMessageText
+      });
+    }
+  }
+
   /// Updates a message in the Firestore. Accepts any message and a
   /// room ID. Message will probably be taken from the [messages] stream.
   void updateMessage(types.Message message, String roomId) async {
