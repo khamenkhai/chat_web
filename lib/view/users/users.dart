@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
-import 'chat/chat.dart';
-import 'util.dart';
+import '../chat/chat.dart';
+import '../utils/util.dart';
 
 class UsersPage extends StatelessWidget {
   const UsersPage({super.key});

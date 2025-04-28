@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
 import 'package:chat_web/controller/selected_room_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'chat/chat.dart';
+import '../chat/chat.dart';
 
 // same imports...
 
@@ -20,6 +22,46 @@ class RoomsPage extends ConsumerStatefulWidget {
 class _RoomsPageState extends ConsumerState<RoomsPage> {
   void logout() async {
     await FirebaseAuth.instance.signOut();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isLargeScreen = constraints.maxWidth >= 800;
+            return isLargeScreen
+                ? Row(
+                    children: [
+                      Container(
+                        width: MediaQuery.of(context).size.width / 3,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: BorderSide(
+                              color: Colors.grey,
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: _buildRoomsList(),
+                      ),
+                      Expanded(
+                        child: ref.watch(selectedRoomProvider) == null
+                            ? _buildEmptyState()
+                            : ChatPage(room: ref.watch(selectedRoomProvider)!),
+                      ),
+                    ],
+                  )
+                : _buildRoomsList();
+          },
+        ),
+      ),
+    );
+  }
+
+  String formatTimeAgo(int timestamp) {
+    return timeago.format(DateTime.fromMillisecondsSinceEpoch(timestamp));
   }
 
   Widget _buildRoomItem(types.Room room) {
@@ -36,11 +78,15 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           room.name ?? 'Unknown',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: FutureBuilder(
           future: ChatlyChatCore.instance.getLastMessage(room.id),
@@ -79,11 +125,15 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.forum_outlined, size: 56, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.forum_outlined,
+                size: 56, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 20),
             Text(
               'No room selected',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -108,7 +158,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: Theme.of(context).colorScheme.outlineVariant,
+                color: Colors.grey,
                 width: 0.5,
               ),
             ),
@@ -117,7 +167,10 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
             children: [
               Text(
                 'Chats',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton(
@@ -167,45 +220,5 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
         ),
       ],
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isLargeScreen = constraints.maxWidth >= 800;
-            return isLargeScreen
-                ? Row(
-                    children: [
-                      Container(
-                        width: 500,
-                        decoration: BoxDecoration(
-                          border: Border(
-                            right: BorderSide(
-                              color: Theme.of(context).colorScheme.outlineVariant,
-                              width: 0.5,
-                            ),
-                          ),
-                        ),
-                        child: _buildRoomsList(),
-                      ),
-                      Expanded(
-                        child: ref.watch(selectedRoomProvider) == null
-                            ? _buildEmptyState()
-                            : ChatPage(room: ref.watch(selectedRoomProvider)!),
-                      ),
-                    ],
-                  )
-                : _buildRoomsList();
-          },
-        ),
-      ),
-    );
-  }
-
-  String formatTimeAgo(int timestamp) {
-    return timeago.format(DateTime.fromMillisecondsSinceEpoch(timestamp));
   }
 }

@@ -1,8 +1,11 @@
+// ignore_for_file: unused_field
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 @immutable
 class AppTheme {
+  // System UI Overlay Styles
   // System UI Overlay Styles
   static const SystemUiOverlayStyle _lightSystemOverlayStyle =
       SystemUiOverlayStyle(
@@ -31,8 +34,13 @@ class AppTheme {
   static const Color _destructiveForeground = Colors.white;
   static const Color _muted = Color(0xFFF1F5F9); // Slate-100
   static const Color _mutedForeground = Color(0xFF64748B); // Slate-500
-  // static const Color _accent = Color(0xFFE2E8F0); // Slate-200
-  // static const Color _accentForeground = Color(0xFF0F172A); 
+
+  // Message colors for light theme
+  static const Color _lightMessageCurrent = _primary; // Current user's message
+  static const Color _lightMessageOther =
+      Color(0xFFE2E8F0); // Other user's message (light grey)
+  static const Color _lightMessageCurrentText = _primaryForeground;
+  static const Color _lightMessageOtherText = Colors.black;
 
   // Dark mode variants
   static const Color _darkPrimary = Color(0xFF60A5FA); // Blue-400
@@ -41,8 +49,14 @@ class AppTheme {
   static const Color _darkSecondaryForeground = Color(0xFF020617); // Slate-950
   static const Color _darkMuted = Color(0xFF1E293B); // Slate-800
   static const Color _darkMutedForeground = Color(0xFF94A3B8); // Slate-400
-  // static const Color _darkAccent = Color(0xFF334155); // Slate-700
-  // static const Color _darkAccentForeground = Color(0xFFF8FAFC); // Slate-50
+
+  // Message colors for dark theme
+  static const Color _darkMessageCurrent =
+      _darkPrimary; // Current user's message
+  static const Color _darkMessageOther =
+      Color(0xFF334155); // Other user's message (dark grey)
+  static const Color _darkMessageCurrentText = _darkPrimaryForeground;
+  static const Color _darkMessageOtherText = Colors.white;
 
   // Text Styles
   static const TextStyle _baseTextStyle = TextStyle(
@@ -103,6 +117,15 @@ class AppTheme {
         onSurface: Colors.black,
         onSurfaceVariant: _mutedForeground,
       ),
+      extensions: <ThemeExtension<dynamic>>[
+        MessageColors(
+          current: _lightMessageCurrent,
+          otherColor: _lightMessageOther,
+          currentText: _lightMessageCurrentText,
+          otherText: _lightMessageOtherText,
+        ),
+      ],
+     
       scaffoldBackgroundColor: Colors.white,
       appBarTheme: AppBarTheme(
         systemOverlayStyle: _lightSystemOverlayStyle,
@@ -297,7 +320,7 @@ class AppTheme {
     final textTheme = _buildTextTheme(Colors.white, _darkMutedForeground);
 
     return ThemeData(
-      useMaterial3: true,
+       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: ColorScheme.dark(
         primary: _darkPrimary,
@@ -310,10 +333,18 @@ class AppTheme {
         onSurface: Colors.white,
         onSurfaceVariant: _darkMutedForeground,
       ),
+      extensions: <ThemeExtension<dynamic>>[
+        MessageColors(
+          current: _darkMessageCurrent,
+          otherColor: _darkMessageOther,
+          currentText: _darkMessageCurrentText,
+          otherText: _darkMessageOtherText,
+        ),
+      ],
       scaffoldBackgroundColor: const Color(0xFF020617), // Slate-950
       appBarTheme: AppBarTheme(
         systemOverlayStyle: _darkSystemOverlayStyle,
-        backgroundColor: const Color(0xFF0F172A), 
+        backgroundColor: const Color(0xFF0F172A),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -336,7 +367,7 @@ class AppTheme {
         space: 1,
       ),
       cardTheme: CardTheme(
-        color: const Color(0xFF0F172A), 
+        color: const Color(0xFF0F172A),
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
@@ -451,7 +482,7 @@ class AppTheme {
         }),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: const Color(0xFF0F172A), 
+        backgroundColor: const Color(0xFF0F172A),
         selectedItemColor: _darkPrimary,
         unselectedItemColor: _darkMutedForeground,
         elevation: 0,
@@ -460,7 +491,7 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: const Color(0xFF0F172A), 
+        backgroundColor: const Color(0xFF0F172A),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -492,7 +523,7 @@ class AppTheme {
         textStyle: textTheme.bodySmall?.copyWith(color: Colors.black),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: const Color(0xFF0F172A), 
+        color: const Color(0xFF0F172A),
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -501,6 +532,52 @@ class AppTheme {
         ),
         textStyle: textTheme.bodyMedium,
       ),
+    );
+  }
+}
+
+
+
+// Custom theme extension for message colors
+@immutable
+class MessageColors extends ThemeExtension<MessageColors> {
+  const MessageColors({
+    required this.current,
+    required this.otherColor,
+    required this.currentText,
+    required this.otherText,
+  });
+
+  final Color current;
+  final Color otherColor;
+  final Color currentText;
+  final Color otherText;
+
+  @override
+  MessageColors copyWith({
+    Color? current,
+    Color? other,
+    Color? currentText,
+    Color? otherText,
+  }) {
+    return MessageColors(
+      current: current ?? this.current,
+      otherColor: other ?? otherColor,
+      currentText: currentText ?? this.currentText,
+      otherText: otherText ?? this.otherText,
+    );
+  }
+
+  @override
+  MessageColors lerp(ThemeExtension<MessageColors>? other, double t) {
+    if (other is! MessageColors) {
+      return this;
+    }
+    return MessageColors(
+      current: Color.lerp(current, other.current, t)!,
+      otherColor: Color.lerp(otherColor, other.otherColor, t)!,
+      currentText: Color.lerp(currentText, other.currentText, t)!,
+      otherText: Color.lerp(otherText, other.otherText, t)!,
     );
   }
 }

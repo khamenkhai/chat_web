@@ -47,6 +47,8 @@ class ChatPage extends StatelessWidget {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: Text(room.name ?? ""),
         actions: const [ThemeSwitch()],
+        elevation: 10,
+        surfaceTintColor: Colors.transparent,
       ),
       body: _ChatContent(room: room),
     );
@@ -54,7 +56,7 @@ class ChatPage extends StatelessWidget {
 }
 
 class _ChatContent extends ConsumerWidget {
-  const _ChatContent({required this.room});
+  _ChatContent({required this.room});
   final types.Room room;
 
   static const String _photoText = 'Photo';
@@ -121,6 +123,7 @@ class _ChatContent extends ConsumerWidget {
 
       ChatlyChatCore.instance.sendMessage(message, room.id);
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
     } finally {
@@ -186,6 +189,17 @@ class _ChatContent extends ConsumerWidget {
     }
   }
 
+  // // Marks messages as seen when the room is opened
+  // void _onRoomOpened(String roomId, List<types.Message> messages) async {
+  //   for (final message in messages) {
+  //     if (message.author.id != FirebaseAuth.instance.currentUser?.uid) {
+  //       await ChatlyChatCore.instance.markMessageAsSeen(roomId, message.id);
+  //     }
+  //   }
+  // }
+
+  final Logger logger = Logger();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final messagesAsync = ref.watch(messagesStreamProvider(room));
@@ -211,6 +225,13 @@ class _ChatContent extends ConsumerWidget {
                           final isMe = message.author.id ==
                               FirebaseAuth.instance.currentUser?.uid;
 
+                          // _onRoomOpened(room.id, messages);
+                          if (message.author.id !=
+                              FirebaseAuth.instance.currentUser?.uid) {
+                            ChatlyChatCore.instance
+                                .markMessageAsSeen(room.id, message.id);
+                          }
+
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Align(
@@ -222,9 +243,7 @@ class _ChatContent extends ConsumerWidget {
                                   maxWidth:
                                       MediaQuery.of(context).size.width * 0.75,
                                 ),
-                                child: 
-                         
-                                MessageBubble(
+                                child: MessageBubble(
                                   message: message,
                                   isMe: isMe,
                                   roomId: room.id,
@@ -276,21 +295,20 @@ class _ChatContent extends ConsumerWidget {
               const LinearProgressIndicator(minHeight: 2),
             MessageInput(
               onSend: (text) {
-                final Logger logger = Logger();
-                final reply = ref.read(replyMessageProvider);
                 
+                final reply = ref.read(replyMessageProvider);
+
                 if (reply != null) {
-                  logger.f("reply : $reply");
-                  ChatlyChatCore.instance.replyToMessage(
-                    partialMessage: types.PartialText(text: text),
+                  ///to send reply message
+                  ChatlyChatCore.instance.sendReply(
+                    originalMessage: reply,
+                    partialReply: types.PartialText(text: text),
                     roomId: room.id,
-                    originalMessageId: reply.id,
                   );
                 } else {
-                  logger.f("sending message : ${reply}");
                   ChatlyChatCore.instance.sendMessage(
                     types.PartialText(text: text),
-                    room.id
+                    room.id,
                   );
                 }
 

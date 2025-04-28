@@ -4,6 +4,7 @@ import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:logger/logger.dart';
 
 // Stream provider for messages
 final messagesStreamProvider = StreamProvider.autoDispose
@@ -32,11 +33,16 @@ final chatStateProvider =
         error: (error, stack) => AsyncValue.error(error, stack),
         data: (updatedRoom) {
           // Mark messages as seen
+          final Logger logger = Logger();
+          logger.f("=> Marking message", stackTrace: StackTrace.fromString(""));
+
           _markMessagesAsSeen(ref, room.id, messages);
-          return AsyncValue.data(ChatState(
-            messages: messages,
-            room: updatedRoom,
-          ));
+          return AsyncValue.data(
+            ChatState(
+              messages: messages,
+              room: updatedRoom,
+            ),
+          );
         },
       );
     },

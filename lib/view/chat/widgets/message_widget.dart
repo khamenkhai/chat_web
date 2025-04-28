@@ -1,3 +1,4 @@
+import 'package:chat_web/core/const/theme_const.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
@@ -6,8 +7,8 @@ class MessageBubble extends StatelessWidget {
   final bool isMe;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
-  final Map<String, dynamic>? metadata;
   final String roomId;
+  final Map<String, dynamic>? metadata;
 
   const MessageBubble({
     super.key,
@@ -21,79 +22,105 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messageColors = Theme.of(context).extension<MessageColors>()!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment:
-          isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // metadata?['isRepliedMessage'] != null
-        //     ? Container():
+    final hasReply = message.metadata?["replyTo"] != null;
 
-        _messageBox(colorScheme, theme),
-
-        // metadata?['isRepliedMessage'] != null
-        //     ? FutureBuilder(
-        //         future: ChatlyChatCore.instance.getMessageById(
-        //           roomId: roomId,
-        //           messageId: metadata?["originalMessageId"],
-        //         ),
-        //         builder: (context, snapshot) {
-        //           return Text(
-        //             (message as types.TextMessage).text,
-        //           );
-        //         },
-        //       )
-        //     : Container()
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: GestureDetector(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isMe ? messageColors.current: messageColors.otherColor,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(isMe ? 16 : 4),
+                bottomRight: Radius.circular(isMe ? 4 : 16),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasReply) _buildReplyWidget(theme),
+                if (!isMe) _buildSenderName(theme),
+                const SizedBox(height: 4),
+                _buildMessageContent(theme, colorScheme),
+                const SizedBox(height: 6),
+                _buildMessageStatus(theme),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  GestureDetector _messageBox(ColorScheme colorScheme, ThemeData theme) {
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: isMe ? colorScheme.primary : colorScheme.surfaceVariant,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft:
-                isMe ? const Radius.circular(16) : const Radius.circular(4),
-            bottomRight:
-                isMe ? const Radius.circular(4) : const Radius.circular(16),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!isMe)
-              Text(
-                message.author.firstName ?? 'Unknown',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                ),
+  Widget _buildReplyWidget(ThemeData theme) {
+    final replyTo = message.metadata?['replyTo'];
+    if (replyTo == null) return SizedBox.shrink();
+
+    final isReplyToCurrentUser = replyTo.author?.id ==
+        message.author.id; // Check if the reply is to the current user
+
+    // Cast replyTo to a TextMessage if possible (you can handle other types of messages similarly)
+    final replyText =
+        replyTo is types.TextMessage ? replyTo.text : 'Unsupported reply type';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color:
+            isReplyToCurrentUser ? Colors.blue.shade100 : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isReplyToCurrentUser)
+            // Text(
+            //   "Replied to: ${replyTo.author?.firstName ?? 'Unknown'}",
+            //   style: theme.textTheme.labelSmall?.copyWith(
+            //     fontStyle: FontStyle.italic,
+            //     color: Colors.black87,
+            //   ),
+            // ),
+            Text(
+              replyText,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: Colors.black87,
               ),
-            const SizedBox(height: 4),
-            _buildMessageContent(theme, colorScheme),
-            const SizedBox(height: 4),
-            _buildMessageStatus(theme),
-          ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSenderName(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        message.author.firstName ?? 'Unknown',
+        style: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -109,26 +136,18 @@ class MessageBubble extends StatelessWidget {
       );
     } else if (message is types.ImageMessage) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: Image.network(
-          "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png",
-          width: 200,
-          height: 200,
+          (message as types.ImageMessage).uri,
+          width: 220,
+          height: 220,
           fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              width: 200,
-              height: 200,
-              color: colorScheme.surfaceVariant,
-              child: Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              ),
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return SizedBox(
+              width: 220,
+              height: 220,
+              child: Center(child: CircularProgressIndicator()),
             );
           },
         ),
@@ -149,15 +168,18 @@ class MessageBubble extends StatelessWidget {
           style: theme.textTheme.labelSmall?.copyWith(
             color: isMe
                 ? theme.colorScheme.onPrimary.withValues(alpha: 0.7)
-                : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                : theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(width: 4),
-        Icon(
-          isSeen ? Icons.done_all : Icons.done,
-          size: 14,
-          color: isSeen ? Colors.white : Colors.white,
-        ),
+        if (isMe)
+          Icon(
+            isSeen ? Icons.done_all : Icons.done,
+            size: 16,
+            color: isSeen
+                ? Colors.white
+                : theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+          ),
       ],
     );
   }
