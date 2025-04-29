@@ -52,6 +52,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   shared_preferences: ^2.5.3
   responsive_framework: ^1.5.1
+  iconly: ^1.0.1
   # flutter_firebase_chat_core: ^1.6.8
 
 dev_dependencies:

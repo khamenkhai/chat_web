@@ -30,11 +30,9 @@ class UsersPage extends StatelessWidget {
   }
 
   void _handlePressed(types.User otherUser, BuildContext context) async {
-    final navigator = Navigator.of(context);
-    await ChatlyChatCore.instance.createRoom(otherUser);
-
-    navigator.pop();
-    context.go("/chat");
+    final room = await ChatlyChatCore.instance.createRoom(otherUser);
+    if(!context.mounted) return;
+    context.go("/chat",extra: room);
   
   }
 

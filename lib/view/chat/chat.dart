@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'package:chat_web/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
+import 'package:chat_web/view/chat/widgets/message_input.dart';
 import 'package:chat_web/view/theme/theme_switch.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -64,19 +65,22 @@ class _ChatContent extends ConsumerWidget {
   static const String _cancelText = 'Cancel';
 
   Future<void> _handleFileSelection(WidgetRef ref) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.any);
-    if (result != null && result.files.single.path != null) {
+    final result =
+        await FilePicker.platform.pickFiles(withData: true); // <-- important
+    if (result != null && result.files.single.bytes != null) {
       ref.read(attachmentUploadingProvider.notifier).state = true;
-      final file = File(result.files.single.path!);
+
+      final fileBytes = result.files.single.bytes!;
       final name = result.files.single.name;
 
       try {
         final reference = FirebaseStorage.instance.ref(name);
-        await reference.putFile(file);
+        await reference
+            .putData(fileBytes); // <-- use putData instead of putFile
         final uri = await reference.getDownloadURL();
 
         final message = types.PartialFile(
-          mimeType: lookupMimeType(file.path),
+          mimeType: lookupMimeType(name),
           name: name,
           size: result.files.single.size,
           uri: uri,
@@ -89,6 +93,7 @@ class _ChatContent extends ConsumerWidget {
     }
   }
 
+  
   Future<void> _handleImageSelection(
       WidgetRef ref, BuildContext context) async {
     final picker = ImagePicker();
@@ -295,7 +300,6 @@ class _ChatContent extends ConsumerWidget {
               const LinearProgressIndicator(minHeight: 2),
             MessageInput(
               onSend: (text) {
-                
                 final reply = ref.read(replyMessageProvider);
 
                 if (reply != null) {

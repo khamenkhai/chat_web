@@ -32,7 +32,7 @@ class AppTheme {
 
   // Message colors for light theme
   static const Color _lightMessageCurrent = _primary; // Current user's message
-  static const Color _lightMessageOther =Color(0xFFE2E8F0); // Other user's message (light grey)
+  static const Color _lightMessageOther = Color(0xFFF5F5F5);
   static const Color _lightMessageCurrentText = _primaryForeground;
   static const Color _lightMessageOtherText = Colors.black;
 
@@ -325,6 +325,7 @@ class AppTheme {
         surface: const Color(0xFF0F172A),
         onSurface: Colors.white,
         onSurfaceVariant: _darkMutedForeground,
+        
       ),
       extensions: <ThemeExtension<dynamic>>[
         MessageColors(

@@ -1,5 +1,8 @@
 import 'package:chat_web/core/const/theme_const.dart';
+import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:flutter/material.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class MessageBubble extends StatelessWidget {
@@ -20,6 +23,40 @@ class MessageBubble extends StatelessWidget {
     this.metadata,
   });
 
+  void _downloadFile(types.FileMessage fileMessage, BuildContext context) async {
+  try {
+    // Show a loading indicator or snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Downloading ${fileMessage.name}...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    // Create a hidden anchor element
+    final anchor = html.AnchorElement(href: fileMessage.uri)
+      ..target = '_blank'
+      ..download = fileMessage.name
+      ..rel = 'noopener noreferrer';
+    
+    // Add to DOM, trigger click, then remove
+    html.document.body?.append(anchor);
+    anchor.click();
+    anchor.remove();
+
+    // Optional: Track successful download initiation
+    debugPrint('Download initiated for: ${fileMessage.name}');
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to download file: ${e.toString()}'),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+    debugPrint('File download error: $e');
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     final messageColors = Theme.of(context).extension<MessageColors>()!;
@@ -35,7 +72,12 @@ class MessageBubble extends StatelessWidget {
             maxWidth: MediaQuery.of(context).size.width * 0.75,
           ),
           child: GestureDetector(
-            onTap: onTap,
+            onTap: () {
+              // Web-specific download/open logic
+              if (message is types.FileMessage) {
+               _downloadFile(message as types.FileMessage,context);
+              }
+            },
             onLongPress: onLongPress,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -48,13 +90,6 @@ class MessageBubble extends StatelessWidget {
                   bottomLeft: Radius.circular(isMe ? 16 : 4),
                   bottomRight: Radius.circular(isMe ? 4 : 16),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +101,7 @@ class MessageBubble extends StatelessWidget {
                   const SizedBox(height: 4),
                   _buildMessageContent(theme, colorScheme),
                   const SizedBox(height: 6),
-                  _buildMessageStatus(theme),
+                  _buildMessageStatus(theme, context),
                 ],
               ),
             ),
@@ -219,7 +254,7 @@ class MessageBubble extends StatelessWidget {
     return const Text('Unsupported message type');
   }
 
-  Widget _buildMessageStatus(ThemeData theme) {
+  Widget _buildMessageStatus(ThemeData theme, BuildContext context) {
     final isSeen = message.metadata?['seen'] == true;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -238,7 +273,7 @@ class MessageBubble extends StatelessWidget {
             isSeen ? Icons.done_all : Icons.done,
             size: 16,
             color: isSeen
-                ? Colors.blue
+                ? context.primaryColor
                 : theme.colorScheme.onPrimary.withValues(alpha: 0.7),
           ),
       ],
@@ -317,79 +352,5 @@ class _FileMessageTile extends StatelessWidget {
     if (size < 1024) return '$size B';
     if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
     return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-}
-
-class MessageInput extends StatefulWidget {
-  final Function(String) onSend;
-  final VoidCallback onAttachmentPressed;
-
-  const MessageInput({
-    super.key,
-    required this.onSend,
-    required this.onAttachmentPressed,
-  });
-
-  @override
-  State<MessageInput> createState() => _MessageInputState();
-}
-
-class _MessageInputState extends State<MessageInput> {
-  final _textController = TextEditingController();
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.attach_file),
-            onPressed: widget.onAttachmentPressed,
-          ),
-          Expanded(
-            child: TextField(
-              controller: _textController,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              onChanged: (text) {
-                setState(() {});
-              },
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.send,
-              color: _textController.text.trim().isEmpty
-                  ? Theme.of(context).disabledColor
-                  : Theme.of(context).colorScheme.primary,
-            ),
-            onPressed: _textController.text.trim().isEmpty
-                ? null
-                : () {
-                    widget.onSend(_textController.text);
-                    _textController.clear();
-                    setState(() {});
-                  },
-          ),
-        ],
-      ),
-    );
   }
 }
