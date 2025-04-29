@@ -1,14 +1,10 @@
-// ignore_for_file: unused_field
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 @immutable
 class AppTheme {
   // System UI Overlay Styles
-  // System UI Overlay Styles
-  static const SystemUiOverlayStyle _lightSystemOverlayStyle =
-      SystemUiOverlayStyle(
+  static const SystemUiOverlayStyle _lightSystemOverlayStyle = SystemUiOverlayStyle(
     statusBarBrightness: Brightness.dark,
     statusBarIconBrightness: Brightness.dark,
     statusBarColor: Colors.transparent,
@@ -16,8 +12,7 @@ class AppTheme {
     systemNavigationBarIconBrightness: Brightness.dark,
   );
 
-  static const SystemUiOverlayStyle _darkSystemOverlayStyle =
-      SystemUiOverlayStyle(
+  static const SystemUiOverlayStyle _darkSystemOverlayStyle = SystemUiOverlayStyle(
     statusBarBrightness: Brightness.light,
     statusBarIconBrightness: Brightness.light,
     statusBarColor: Colors.transparent,
@@ -37,8 +32,7 @@ class AppTheme {
 
   // Message colors for light theme
   static const Color _lightMessageCurrent = _primary; // Current user's message
-  static const Color _lightMessageOther =
-      Color(0xFFE2E8F0); // Other user's message (light grey)
+  static const Color _lightMessageOther =Color(0xFFE2E8F0); // Other user's message (light grey)
   static const Color _lightMessageCurrentText = _primaryForeground;
   static const Color _lightMessageOtherText = Colors.black;
 
@@ -125,7 +119,6 @@ class AppTheme {
           otherText: _lightMessageOtherText,
         ),
       ],
-     
       scaffoldBackgroundColor: Colors.white,
       appBarTheme: AppBarTheme(
         systemOverlayStyle: _lightSystemOverlayStyle,
@@ -320,7 +313,7 @@ class AppTheme {
     final textTheme = _buildTextTheme(Colors.white, _darkMutedForeground);
 
     return ThemeData(
-       useMaterial3: true,
+      useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: ColorScheme.dark(
         primary: _darkPrimary,
@@ -329,7 +322,7 @@ class AppTheme {
         onSecondary: _darkSecondaryForeground,
         error: _destructive,
         onError: _destructiveForeground,
-        surface: const Color(0xFF0F172A), 
+        surface: const Color(0xFF0F172A),
         onSurface: Colors.white,
         onSurfaceVariant: _darkMutedForeground,
       ),
@@ -535,8 +528,6 @@ class AppTheme {
     );
   }
 }
-
-
 
 // Custom theme extension for message colors
 @immutable

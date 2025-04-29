@@ -1,5 +1,5 @@
 import 'package:chat_web/controller/router_provider.dart';
-import 'package:chat_web/controller/theme_controller.dart';
+import 'package:chat_web/controller/theme_provider.dart';
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +41,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       darkTheme: AppTheme.dark(fontFamily: 'Inter'),
       themeMode: themeState.themeMode,
       routerConfig: router,
-      debugShowCheckedModeBanner: false, // Add this for cleaner debug mode
+      debugShowCheckedModeBanner: false, 
     );
   }
 }

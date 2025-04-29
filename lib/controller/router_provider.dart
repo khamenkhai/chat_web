@@ -1,4 +1,4 @@
-import 'package:chat_web/controller/auth_controller.dart';
+import 'package:chat_web/controller/auth_provider.dart';
 import 'package:chat_web/view/auth/login.dart';
 import 'package:chat_web/view/auth/register.dart';
 import 'package:chat_web/view/chat/chat.dart';

@@ -1,9 +1,8 @@
-import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
+import 'package:chat_web/service/chat_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-
-import '../chat/chat.dart';
+import 'package:go_router/go_router.dart';
 import '../utils/util.dart';
 
 class UsersPage extends StatelessWidget {
@@ -32,16 +31,11 @@ class UsersPage extends StatelessWidget {
 
   void _handlePressed(types.User otherUser, BuildContext context) async {
     final navigator = Navigator.of(context);
-    final room = await ChatlyChatCore.instance.createRoom(otherUser);
+    await ChatlyChatCore.instance.createRoom(otherUser);
 
     navigator.pop();
-    await navigator.push(
-      MaterialPageRoute(
-        builder: (context) => ChatPage(
-          room: room,
-        ),
-      ),
-    );
+    context.go("/chat");
+  
   }
 
   @override

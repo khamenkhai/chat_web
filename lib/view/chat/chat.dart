@@ -1,7 +1,7 @@
 // Your imports remain the same
 import 'dart:io';
-import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
-import 'package:chat_web/view/chat/widgets/message_widget.dart';
+import 'package:chat_web/service/chat_service.dart';
+import 'package:chat_web/view/chat/widgets/message_bubble.dart';
 import 'package:chat_web/view/theme/theme_switch.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';

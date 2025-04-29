@@ -1,5 +1,5 @@
+import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:chat_web/core/const/color_const.dart';
 
 class CustomElevatedButton extends StatelessWidget {
   final Color fgColor;
@@ -43,7 +43,7 @@ class CustomElevatedButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius),
           ),
-          backgroundColor: bgColor ?? ColorConstants.primaryColor,
+          backgroundColor: bgColor ?? context.primaryColor,
         ),
         onPressed: isEnabled ? onPressed : null,
         child: child,

@@ -1,7 +1,5 @@
-// ignore_for_file: deprecated_member_use
-
-import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
-import 'package:chat_web/controller/selected_room_controller.dart';
+import 'package:chat_web/controller/selected_room_provider.dart';
+import 'package:chat_web/service/chat_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,8 +71,8 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: isSelected && isLargeScreen
-            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.15)
-            : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.05),
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha:  0.15)
+            : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha:  0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
@@ -173,11 +171,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.more_vert),
-                onPressed: () {},
-                tooltip: "More options",
-              ),
+            
               PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'logout') logout();

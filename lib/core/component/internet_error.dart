@@ -1,5 +1,5 @@
+import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:chat_web/core/const/color_const.dart';
 
 /// TO SHOW WHEN THERE IS NO INTERNET CONNECTION
 class InternetErrorWidget extends StatelessWidget {
@@ -14,10 +14,10 @@ class InternetErrorWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.wifi_off_sharp,
               size: 36,
-              color: ColorConstants.errorColor,
+              color: context.error,
             ),
             const SizedBox(height: 10),
             const Text("No Internet Connection"),
@@ -25,8 +25,8 @@ class InternetErrorWidget extends StatelessWidget {
             ElevatedButton(
               onPressed: () async {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: ColorConstants.backgroundColorLight,
-                foregroundColor: ColorConstants.primaryColor,
+                // backgroundColor: context.,
+                foregroundColor: context.primaryColor,
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(7),

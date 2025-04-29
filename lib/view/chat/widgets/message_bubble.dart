@@ -26,44 +26,49 @@ class MessageBubble extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final hasReply = message.metadata?["replyTo"] != null;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: GestureDetector(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isMe ? messageColors.current: messageColors.otherColor,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isMe ? 16 : 4),
-                bottomRight: Radius.circular(isMe ? 4 : 16),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          child: GestureDetector(
+            onTap: onTap,
+            onLongPress: onLongPress,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isMe ? messageColors.current : messageColors.otherColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: Radius.circular(isMe ? 16 : 4),
+                  bottomRight: Radius.circular(isMe ? 4 : 16),
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (hasReply) _buildReplyWidget(theme),
-                if (!isMe) _buildSenderName(theme),
-                const SizedBox(height: 4),
-                _buildMessageContent(theme, colorScheme),
-                const SizedBox(height: 6),
-                _buildMessageStatus(theme),
-              ],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (message.repliedMessage != null)
+                    _buildReplyWidget(context, message.repliedMessage!, isMe),
+                  if (!isMe) _buildSenderName(theme),
+                  const SizedBox(height: 4),
+                  _buildMessageContent(theme, colorScheme),
+                  const SizedBox(height: 6),
+                  _buildMessageStatus(theme),
+                ],
+              ),
             ),
           ),
         ),
@@ -71,46 +76,81 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildReplyWidget(ThemeData theme) {
-    final replyTo = message.metadata?['replyTo'];
-    if (replyTo == null) return SizedBox.shrink();
-
-    final isReplyToCurrentUser = replyTo.author?.id ==
-        message.author.id; // Check if the reply is to the current user
-
-    // Cast replyTo to a TextMessage if possible (you can handle other types of messages similarly)
-    final replyText =
-        replyTo is types.TextMessage ? replyTo.text : 'Unsupported reply type';
+  Widget _buildReplyWidget(
+      BuildContext context, types.Message repliedMessage, bool isCurrentUser) {
+    final theme = Theme.of(context);
+    final isReplyFromMe = repliedMessage.author.id == message.author.id;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color:
-            isReplyToCurrentUser ? Colors.blue.shade100 : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(12),
+        color: isReplyFromMe
+            ? theme.colorScheme.primary.withValues(alpha: 0.1)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.dividerColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isReplyToCurrentUser)
-            // Text(
-            //   "Replied to: ${replyTo.author?.firstName ?? 'Unknown'}",
-            //   style: theme.textTheme.labelSmall?.copyWith(
-            //     fontStyle: FontStyle.italic,
-            //     color: Colors.black87,
-            //   ),
-            // ),
-            Text(
-              replyText,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontStyle: FontStyle.italic,
-                color: Colors.black87,
-              ),
+          Text(
+            'Replying to ${isReplyFromMe ? 'yourself' : repliedMessage.author.firstName ?? 'User'}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
+          ),
+          const SizedBox(height: 4),
+          _buildReplyContent(repliedMessage, theme),
         ],
       ),
     );
+  }
+
+  Widget _buildReplyContent(types.Message message, ThemeData theme) {
+    if (message is types.TextMessage) {
+      return Text(
+        message.text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    } else if (message is types.ImageMessage) {
+      return Row(
+        children: [
+          const Icon(Icons.image, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            'Photo',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    } else if (message is types.FileMessage) {
+      return Row(
+        children: [
+          const Icon(Icons.insert_drive_file, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            message.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildSenderName(ThemeData theme) {
@@ -147,7 +187,28 @@ class MessageBubble extends StatelessWidget {
             return SizedBox(
               width: 220,
               height: 220,
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: progress.expectedTotalBytes != null
+                      ? progress.cumulativeBytesLoaded /
+                          progress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 220,
+              height: 220,
+              color: colorScheme.surfaceContainerHighest,
+              child: Center(
+                child: Icon(
+                  Icons.broken_image,
+                  size: 48,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
             );
           },
         ),
@@ -177,7 +238,7 @@ class MessageBubble extends StatelessWidget {
             isSeen ? Icons.done_all : Icons.done,
             size: 16,
             color: isSeen
-                ? Colors.white
+                ? Colors.blue
                 : theme.colorScheme.onPrimary.withValues(alpha: 0.7),
           ),
       ],
@@ -205,6 +266,10 @@ class _FileMessageTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.dividerColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -221,7 +286,9 @@ class _FileMessageTile extends StatelessWidget {
                 ),
                 Text(
                   _formatFileSize(message.size),
-                  style: theme.textTheme.labelSmall,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

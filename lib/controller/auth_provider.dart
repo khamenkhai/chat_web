@@ -1,4 +1,4 @@
-import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
+import 'package:chat_web/service/chat_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';

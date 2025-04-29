@@ -1,4 +1,4 @@
-import 'package:chat_web/controller/theme_controller.dart';
+import 'package:chat_web/controller/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

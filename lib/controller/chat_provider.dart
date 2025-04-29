@@ -1,6 +1,4 @@
-// // chat_controller.dart
-
-import 'package:chat_web/chatly_plus/src/chatly_chat_core.dart';
+import 'package:chat_web/service/chat_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;

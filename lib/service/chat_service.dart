@@ -1,3 +1,5 @@
+import 'package:chat_web/core/const/chatly_chat_core_config.dart';
+import 'package:chat_web/core/utils/chat_util.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -5,8 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:logger/logger.dart';
 
-import 'chatly_chat_core_config.dart';
-import 'util.dart';
 
 /// Provides access to Firebase chat data. Singleton, use
 /// ChatlyChatCore.instance to aceess methods.
@@ -693,9 +693,10 @@ class ChatlyChatCore {
         id: '',
         partialText: partialReply,
       ).copyWith(
+        repliedMessage: originalMessage,
         metadata: {
           ...partialReply.metadata ?? {},
-          'replyTo': originalMessage.toJson(),
+          // 'replyTo': originalMessage.toJson(),
         },
       );
     } else if (partialReply is types.PartialImage) {
@@ -704,9 +705,10 @@ class ChatlyChatCore {
         id: '',
         partialImage: partialReply,
       ).copyWith(
+        repliedMessage: originalMessage,
         metadata: {
           ...partialReply.metadata ?? {},
-          'replyTo': originalMessage.toJson(),
+          // 'replyTo': originalMessage.toJson(),
         },
       );
     } else if (partialReply is types.PartialFile) {
@@ -715,9 +717,10 @@ class ChatlyChatCore {
         id: '',
         partialFile: partialReply,
       ).copyWith(
+        repliedMessage: originalMessage,
         metadata: {
           ...partialReply.metadata ?? {},
-          'replyTo': originalMessage.toJson(),
+          // 'replyTo': originalMessage.toJson(),
         },
       );
     } else if (partialReply is types.PartialCustom) {
@@ -726,9 +729,10 @@ class ChatlyChatCore {
         id: '',
         partialCustom: partialReply,
       ).copyWith(
+        repliedMessage: originalMessage,
         metadata: {
           ...partialReply.metadata ?? {},
-          'replyTo': originalMessage.toJson(),
+          // 'replyTo': originalMessage.toJson(),
         },
       );
     }
@@ -745,58 +749,28 @@ class ChatlyChatCore {
 
   /// Processes message replies when fetching messages from Firestore
   /// to properly reconstruct the reply relationship
+  /// Processes replied messages when fetching messages from Firestore
+  /// to properly set the author from room users
   types.Message _processReplyMetadata(
     types.Message message,
     types.Room room,
   ) {
-    final replyMetadata = message.metadata?['replyTo'];
-    if (replyMetadata != null && replyMetadata is Map<String, dynamic>) {
-      try {
-        // Find the original author in room's users
-        final originalAuthorId = replyMetadata['authorId'] ??
-            (replyMetadata['author'] as Map<String, dynamic>?)?['id'];
+    // If message has a replied message, ensure its author is properly set from room users
+    if (message.repliedMessage != null) {
+      final repliedMessage = message.repliedMessage!;
+      final originalAuthor = room.users.firstWhere(
+        (u) => u.id == repliedMessage.author.id,
+        orElse: () =>
+            repliedMessage.author, // Fall back to original author if not found
+      );
 
-        if (originalAuthorId != null) {
-          final originalAuthor = room.users.firstWhere(
-            (u) => u.id == originalAuthorId,
-            orElse: () => types.User(id: originalAuthorId),
-          );
-
-          // Update the author in the reply metadata
-          replyMetadata['author'] = originalAuthor.toJson();
-
-          // Reconstruct the original message based on type
-          types.Message originalMessage;
-          switch (replyMetadata['type']) {
-            case 'text':
-              originalMessage = types.TextMessage.fromJson(replyMetadata);
-              break;
-            case 'image':
-              originalMessage = types.ImageMessage.fromJson(replyMetadata);
-              break;
-            case 'file':
-              originalMessage = types.FileMessage.fromJson(replyMetadata);
-              break;
-            case 'custom':
-              originalMessage = types.CustomMessage.fromJson(replyMetadata);
-              break;
-            default:
-              originalMessage = types.Message.fromJson(replyMetadata);
-          }
-
-          return message.copyWith(
-            metadata: {
-              ...message.metadata ?? {},
-              'replyTo': originalMessage,
-            },
-          );
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error processing reply metadata: $e');
-        }
-      }
+      // Return message with updated repliedMessage author
+      return message.copyWith(
+        repliedMessage: repliedMessage.copyWith(author: originalAuthor),
+      );
     }
+
+    // Return original message if no replied message
     return message;
   }
 
