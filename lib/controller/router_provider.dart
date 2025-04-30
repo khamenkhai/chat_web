@@ -7,7 +7,6 @@ import 'package:chat_web/view/users/users.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 final routerProvider = Provider<GoRouter>(
   (ref) {
@@ -49,12 +48,19 @@ final routerProvider = Provider<GoRouter>(
           builder: (context, state) => const UsersPage(),
         ),
         GoRoute(
-          path: '/chat',
+          path: '/chat/:roomId',
           builder: (context, state) {
-            final types.Room room = state.extra as types.Room;
-            return ChatPage(room: room);
+            final roomId = state.pathParameters['roomId']!;
+            return ChatPage(roomId: roomId);
           },
         ),
+        // GoRoute(
+        //   path: '/chat',
+        //   builder: (context, state) {
+        //     final types.Room room = state.extra as types.Room;
+        //     return ChatPage(room: room);
+        //   },
+        // ),
       ],
       errorBuilder: (context, state) => Scaffold(
         body: Center(

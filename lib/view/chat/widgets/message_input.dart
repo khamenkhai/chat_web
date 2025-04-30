@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconly/iconly.dart';
 
 class MessageInput extends StatefulWidget {
   final Function(String) onSend;
@@ -30,7 +31,10 @@ class _MessageInputState extends State<MessageInput> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.attach_file),
+            icon: Icon(
+              IconlyLight.folder,
+              color: Theme.of(context).disabledColor,
+            ),
             onPressed: widget.onAttachmentPressed,
           ),
           Expanded(
@@ -55,7 +59,7 @@ class _MessageInputState extends State<MessageInput> {
           ),
           IconButton(
             icon: Icon(
-              Icons.send,
+              IconlyBold.send,
               color: _textController.text.trim().isEmpty
                   ? Theme.of(context).disabledColor
                   : Theme.of(context).colorScheme.primary,

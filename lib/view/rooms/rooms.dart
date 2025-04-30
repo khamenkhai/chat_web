@@ -1,8 +1,6 @@
 import 'package:chat_web/controller/selected_room_provider.dart';
-import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/service/chat_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,7 +49,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
                       Expanded(
                         child: ref.watch(selectedRoomProvider) == null
                             ? _buildEmptyState()
-                            : ChatPage(room: ref.watch(selectedRoomProvider)!),
+                            : ChatPage(roomId: ref.watch(selectedRoomProvider)?.id ?? ""),
                       ),
                     ],
                   )
@@ -119,7 +117,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           if (isLargeScreen) {
             ref.read(selectedRoomProvider.notifier).state = room;
           } else {
-            context.go("/chat", extra: room);
+            context.go("/chat/${room.id}", extra: room.id);
           }
         },
       ),

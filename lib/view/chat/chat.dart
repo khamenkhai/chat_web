@@ -1,5 +1,6 @@
 // Your imports remain the same
 import 'dart:io';
+import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
 import 'package:chat_web/view/chat/widgets/message_input.dart';
@@ -18,12 +19,6 @@ import 'package:logger/logger.dart';
 import 'package:mime/mime.dart';
 import 'package:path_provider/path_provider.dart';
 
-// Stream provider for messages
-final messagesStreamProvider = StreamProvider.autoDispose
-    .family<List<types.Message>, types.Room>((ref, room) {
-  return ChatlyChatCore.instance.messages(room);
-});
-
 // Stream provider for room updates
 final roomStreamProvider =
     StreamProvider.autoDispose.family<types.Room, String>((ref, roomId) {
@@ -37,22 +32,36 @@ final attachmentUploadingProvider =
 // Reply message state
 final replyMessageProvider = StateProvider<types.Message?>((ref) => null);
 
-class ChatPage extends StatelessWidget {
-  const ChatPage({super.key, required this.room});
-  final types.Room room;
+class ChatPage extends ConsumerWidget {
+  const ChatPage({super.key, required this.roomId});
+  final String roomId;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        title: Text(room.name ?? ""),
-        actions: const [ThemeSwitch()],
-        elevation: 10,
-        surfaceTintColor: Colors.transparent,
+  Widget build(BuildContext context,ref) {
+
+      final roomAsync = ref.watch(roomStreamProvider(roomId));
+
+      return roomAsync.when(
+      loading: () =>  Scaffold(
+        appBar: AppBar(),
+        body: Center(child: CircularProgressIndicator()),
       ),
-      body: _ChatContent(room: room),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text('Error: $error')),
+      ),
+      data: (room) => Scaffold(
+        appBar: AppBar(
+          systemOverlayStyle: SystemUiOverlayStyle.light,
+          title: Text(room.name ?? ""),
+          actions: const [ThemeSwitch()],
+          elevation: 10,
+          surfaceTintColor: Colors.transparent,
+        ),
+        body: _ChatContent(room: room),
+      ),
     );
+
   }
 }
 
@@ -93,7 +102,6 @@ class _ChatContent extends ConsumerWidget {
     }
   }
 
-  
   Future<void> _handleImageSelection(
       WidgetRef ref, BuildContext context) async {
     final picker = ImagePicker();
@@ -193,15 +201,6 @@ class _ChatContent extends ConsumerWidget {
       }
     }
   }
-
-  // // Marks messages as seen when the room is opened
-  // void _onRoomOpened(String roomId, List<types.Message> messages) async {
-  //   for (final message in messages) {
-  //     if (message.author.id != FirebaseAuth.instance.currentUser?.uid) {
-  //       await ChatlyChatCore.instance.markMessageAsSeen(roomId, message.id);
-  //     }
-  //   }
-  // }
 
   final Logger logger = Logger();
 

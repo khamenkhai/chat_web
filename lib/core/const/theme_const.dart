@@ -117,6 +117,7 @@ class AppTheme {
           otherColor: _lightMessageOther,
           currentText: _lightMessageCurrentText,
           otherText: _lightMessageOtherText,
+          replyColor: Colors.grey.shade300
         ),
       ],
       scaffoldBackgroundColor: Colors.white,
@@ -332,6 +333,7 @@ class AppTheme {
           current: _darkMessageCurrent,
           otherColor: _darkMessageOther,
           currentText: _darkMessageCurrentText,
+          replyColor: Colors.grey.shade700,
           otherText: _darkMessageOtherText,
         ),
       ],
@@ -538,12 +540,14 @@ class MessageColors extends ThemeExtension<MessageColors> {
     required this.otherColor,
     required this.currentText,
     required this.otherText,
+    required this.replyColor,
   });
 
   final Color current;
   final Color otherColor;
   final Color currentText;
   final Color otherText;
+  final Color replyColor;
 
   @override
   MessageColors copyWith({
@@ -551,12 +555,14 @@ class MessageColors extends ThemeExtension<MessageColors> {
     Color? other,
     Color? currentText,
     Color? otherText,
+    Color? replyColor,
   }) {
     return MessageColors(
       current: current ?? this.current,
       otherColor: other ?? otherColor,
       currentText: currentText ?? this.currentText,
       otherText: otherText ?? this.otherText,
+      replyColor: replyColor ?? this.replyColor,
     );
   }
 
@@ -570,6 +576,7 @@ class MessageColors extends ThemeExtension<MessageColors> {
       otherColor: Color.lerp(otherColor, other.otherColor, t)!,
       currentText: Color.lerp(currentText, other.currentText, t)!,
       otherText: Color.lerp(otherText, other.otherText, t)!,
+      replyColor: Color.lerp(replyColor, other.replyColor, t)!,
     );
   }
 }
