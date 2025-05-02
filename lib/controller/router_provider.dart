@@ -3,6 +3,7 @@ import 'package:chat_web/view/auth/login.dart';
 import 'package:chat_web/view/auth/register.dart';
 import 'package:chat_web/view/chat/chat.dart';
 import 'package:chat_web/view/rooms/rooms.dart';
+import 'package:chat_web/view/users/search_users.dart';
 import 'package:chat_web/view/users/users.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -47,6 +48,10 @@ final routerProvider = Provider<GoRouter>(
         GoRoute(
           path: '/users',
           builder: (context, state) => const UsersPage(),
+        ),
+        GoRoute(
+          path: '/search_users',
+          builder: (context, state) => const SearchUsers(),
         ),
         GoRoute(
           path: '/chat',

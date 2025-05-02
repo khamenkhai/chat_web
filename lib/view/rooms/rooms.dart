@@ -1,8 +1,6 @@
 import 'package:chat_web/controller/selected_room_provider.dart';
-import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/service/chat_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -197,6 +195,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           ),
           height: 35,
           child: TextField(
+            onTap: () => context.go("/search_users"),
             decoration: InputDecoration(
               hintText: 'Search...',
               border: OutlineInputBorder(
