@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:logger/logger.dart';
+
 
 
 /// Provides access to Firebase chat data. Singleton, use
@@ -737,13 +737,11 @@ class ChatlyChatCore {
       );
     }
 
-    final Logger log = Logger();
-
     if (replyMessage != null) {
-      log.f("=> reply message : $replyMessage");
+      debugPrint("=> reply message : $replyMessage");
       sendMessageReply(replyMessage, roomId);
     } else {
-      log.f("=> reply message : $replyMessage");
+      debugPrint("=> reply message : $replyMessage");
     }
   }
 

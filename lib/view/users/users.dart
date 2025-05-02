@@ -31,9 +31,8 @@ class UsersPage extends StatelessWidget {
 
   void _handlePressed(types.User otherUser, BuildContext context) async {
     final room = await ChatlyChatCore.instance.createRoom(otherUser);
-    if(!context.mounted) return;
-    context.go("/chat",extra: room);
-  
+    if (!context.mounted) return;
+    context.go("/chat/${room.id}", extra: room.id);
   }
 
   @override

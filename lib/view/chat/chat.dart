@@ -1,5 +1,6 @@
-// Your imports remain the same
 import 'dart:io';
+import 'package:chat_web/controller/chat_provider.dart';
+import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
 import 'package:chat_web/view/chat/widgets/message_input.dart';
@@ -14,59 +15,101 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:mime/mime.dart';
 import 'package:path_provider/path_provider.dart';
 
-// Stream provider for messages
-final messagesStreamProvider = StreamProvider.autoDispose
-    .family<List<types.Message>, types.Room>((ref, room) {
-  return ChatlyChatCore.instance.messages(room);
-});
-
-// Stream provider for room updates
-final roomStreamProvider =
-    StreamProvider.autoDispose.family<types.Room, String>((ref, roomId) {
-  return ChatlyChatCore.instance.room(roomId);
-});
-
 // Provider for attachment uploading state
-final attachmentUploadingProvider =
-    StateProvider.autoDispose<bool>((ref) => false);
+final attachmentUploadingProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
 
 // Reply message state
 final replyMessageProvider = StateProvider<types.Message?>((ref) => null);
 
-class ChatPage extends StatelessWidget {
-  const ChatPage({super.key, required this.room});
-  final types.Room room;
+class ChatPage extends ConsumerWidget {
+  const ChatPage({super.key, required this.roomId});
+  final String roomId;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        title: Text(room.name ?? ""),
-        actions: const [ThemeSwitch()],
-        elevation: 10,
-        surfaceTintColor: Colors.transparent,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final roomAsync = ref.watch(roomStreamProvider(roomId));
+
+    return roomAsync.when(
+      loading: () => Scaffold(
+        appBar: AppBar(),
+        body: Center(child: CircularProgressIndicator()),
       ),
-      body: _ChatContent(room: room),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text('Error: $error')),
+      ),
+      data: (room) => Scaffold(
+        appBar: AppBar(
+          systemOverlayStyle: SystemUiOverlayStyle.light,
+          title: Text(room.name ?? ""),
+          actions: const [
+            ThemeSwitch(),
+          ],
+          elevation: 10,
+          surfaceTintColor: Colors.transparent,
+        ),
+        body: _ChatContent(room: room),
+      ),
     );
   }
 }
 
 class _ChatContent extends ConsumerWidget {
   _ChatContent({required this.room});
+
   final types.Room room;
 
   static const String _photoText = 'Photo';
   static const String _fileText = 'File';
   static const String _cancelText = 'Cancel';
 
+  // Helper function to group messages by day
+  Map<DateTime, List<types.Message>> _groupMessagesByDay(
+      List<types.Message> messages) {
+    final Map<DateTime, List<types.Message>> groupedMessages = {};
+
+    for (final message in messages) {
+      final messageDate =
+          DateTime.fromMillisecondsSinceEpoch(message.createdAt!);
+      final day =
+          DateTime(messageDate.year, messageDate.month, messageDate.day);
+
+      if (groupedMessages.containsKey(day)) {
+        groupedMessages[day]!.add(message);
+      } else {
+        groupedMessages[day] = [message];
+      }
+    }
+
+    return groupedMessages;
+  }
+
+  // Helper function to format day header
+  String _formatDayHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+
+    final dateToCheck = DateTime(date.year, date.month, date.day);
+
+    if (dateToCheck == today) {
+      return 'Today';
+    } else if (dateToCheck == yesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat('EEEE, MMMM d').format(date);
+    }
+  }
+
   Future<void> _handleFileSelection(WidgetRef ref) async {
-    final result =
-        await FilePicker.platform.pickFiles(withData: true); // <-- important
+    final result = await FilePicker.platform.pickFiles(withData: true);
     if (result != null && result.files.single.bytes != null) {
       ref.read(attachmentUploadingProvider.notifier).state = true;
 
@@ -75,8 +118,7 @@ class _ChatContent extends ConsumerWidget {
 
       try {
         final reference = FirebaseStorage.instance.ref(name);
-        await reference
-            .putData(fileBytes); // <-- use putData instead of putFile
+        await reference.putData(fileBytes);
         final uri = await reference.getDownloadURL();
 
         final message = types.PartialFile(
@@ -93,9 +135,10 @@ class _ChatContent extends ConsumerWidget {
     }
   }
 
-  
   Future<void> _handleImageSelection(
-      WidgetRef ref, BuildContext context) async {
+    WidgetRef ref,
+    BuildContext context,
+  ) async {
     final picker = ImagePicker();
     try {
       final result = await picker.pickImage(
@@ -194,15 +237,6 @@ class _ChatContent extends ConsumerWidget {
     }
   }
 
-  // // Marks messages as seen when the room is opened
-  // void _onRoomOpened(String roomId, List<types.Message> messages) async {
-  //   for (final message in messages) {
-  //     if (message.author.id != FirebaseAuth.instance.currentUser?.uid) {
-  //       await ChatlyChatCore.instance.markMessageAsSeen(roomId, message.id);
-  //     }
-  //   }
-  // }
-
   final Logger logger = Logger();
 
   @override
@@ -215,6 +249,11 @@ class _ChatContent extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('Error: $error')),
       data: (messages) {
+        // Group messages by day
+        final groupedMessages = _groupMessagesByDay(messages);
+        final sortedDays = groupedMessages.keys.toList()
+          ..sort((a, b) => b.compareTo(a));
+
         return Column(
           children: [
             Expanded(
@@ -226,46 +265,60 @@ class _ChatContent extends ConsumerWidget {
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          final message = messages[index];
-                          final isMe = message.author.id ==
-                              FirebaseAuth.instance.currentUser?.uid;
+                          final day = sortedDays[index];
+                          final dayMessages = groupedMessages[day]!;
 
-                          // _onRoomOpened(room.id, messages);
-                          if (message.author.id !=
-                              FirebaseAuth.instance.currentUser?.uid) {
-                            ChatlyChatCore.instance
-                                .markMessageAsSeen(room.id, message.id);
-                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Day header
+                              _dayHeader(context, day),
+                              // Messages for this day
+                              ...dayMessages.map((message) {
+                                final isMe = message.author.id ==
+                                    FirebaseAuth.instance.currentUser?.uid;
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Align(
-                              alignment: isMe
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth:
-                                      MediaQuery.of(context).size.width * 0.75,
-                                ),
-                                child: MessageBubble(
-                                  message: message,
-                                  isMe: isMe,
-                                  roomId: room.id,
-                                  metadata: message.metadata,
-                                  onTap: () =>
-                                      _handleMessageTap(context, message),
-                                  onLongPress: () {
-                                    ref
-                                        .read(replyMessageProvider.notifier)
-                                        .state = message;
-                                  },
-                                ),
-                              ),
-                            ),
+                                if (message.author.id !=
+                                    FirebaseAuth.instance.currentUser?.uid) {
+                                  ChatlyChatCore.instance
+                                      .markMessageAsSeen(room.id, message.id);
+                                }
+
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: Align(
+                                    alignment: isMe
+                                        ? Alignment.centerRight
+                                        : Alignment.centerLeft,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth:
+                                            MediaQuery.of(context).size.width *
+                                                0.75,
+                                      ),
+                                      child: MessageBubble(
+                                        message: message,
+                                        isMe: isMe,
+                                        roomId: room.id,
+                                        metadata: message.metadata,
+                                        onTap: () =>
+                                            _handleMessageTap(context, message),
+                                        onLongPress: () {
+                                          ref
+                                              .read(
+                                                  replyMessageProvider.notifier)
+                                              .state = message;
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
                           );
                         },
-                        childCount: messages.length,
+                        childCount: sortedDays.length,
                       ),
                     ),
                   ),
@@ -303,7 +356,6 @@ class _ChatContent extends ConsumerWidget {
                 final reply = ref.read(replyMessageProvider);
 
                 if (reply != null) {
-                  ///to send reply message
                   ChatlyChatCore.instance.sendReply(
                     originalMessage: reply,
                     partialReply: types.PartialText(text: text),
@@ -323,6 +375,26 @@ class _ChatContent extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+
+  Padding _dayHeader(BuildContext context, DateTime day) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
+          child: Text(
+            _formatDayHeader(day),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+          ),
+        ),
+      ),
     );
   }
 }

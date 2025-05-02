@@ -49,7 +49,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
                       Expanded(
                         child: ref.watch(selectedRoomProvider) == null
                             ? _buildEmptyState()
-                            : ChatPage(room: ref.watch(selectedRoomProvider)!),
+                            : ChatPage(roomId: ref.watch(selectedRoomProvider)?.id ?? ""),
                       ),
                     ],
                   )
@@ -117,7 +117,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           if (isLargeScreen) {
             ref.read(selectedRoomProvider.notifier).state = room;
           } else {
-            context.go("/chat", extra: room);
+            context.go("/chat/${room.id}", extra: room.id);
           }
         },
       ),
