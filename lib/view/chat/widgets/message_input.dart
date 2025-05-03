@@ -3,12 +3,14 @@ import 'package:iconly/iconly.dart';
 
 class MessageInput extends StatefulWidget {
   final Function(String) onSend;
-  final VoidCallback onAttachmentPressed;
+  final VoidCallback handleImageSelection;
+  final VoidCallback handleFileSelection;
 
   const MessageInput({
     super.key,
     required this.onSend,
-    required this.onAttachmentPressed,
+    required this.handleImageSelection,
+    required this.handleFileSelection,
   });
 
   @override
@@ -35,7 +37,14 @@ class _MessageInputState extends State<MessageInput> {
               IconlyLight.folder,
               color: Theme.of(context).disabledColor,
             ),
-            onPressed: widget.onAttachmentPressed,
+            onPressed: widget.handleImageSelection,
+          ),
+          IconButton(
+            icon: Icon(
+              IconlyLight.image_2,
+              color: Theme.of(context).disabledColor,
+            ),
+            onPressed: widget.handleImageSelection,
           ),
           Expanded(
             child: TextField(

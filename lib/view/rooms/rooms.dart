@@ -1,3 +1,4 @@
+import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:chat_web/service/chat_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,20 +12,21 @@ import '../chat/chat.dart';
 
 // same imports...
 
-class RoomsPage extends ConsumerStatefulWidget {
+class RoomsPage extends StatefulWidget {
   const RoomsPage({super.key});
 
   @override
-  ConsumerState<RoomsPage> createState() => _RoomsPageState();
+  State<RoomsPage> createState() => _RoomsPageState();
 }
 
-class _RoomsPageState extends ConsumerState<RoomsPage> {
+class _RoomsPageState extends State<RoomsPage> {
   void logout() async {
     await FirebaseAuth.instance.signOut();
   }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("=> room page rebuild!");
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -46,10 +48,17 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
                         ),
                         child: _buildRoomsList(),
                       ),
-                      Expanded(
-                        child: ref.watch(selectedRoomProvider) == null
-                            ? _buildEmptyState()
-                            : ChatPage(roomId: ref.watch(selectedRoomProvider)?.id ?? ""),
+                      Consumer(
+                        builder: (context, ref, child) {
+                          return Expanded(
+                            child: ref.watch(selectedRoomProvider) == null
+                                ? _buildEmptyState()
+                                : ChatPage(
+                                    roomId:
+                                        ref.read(selectedRoomProvider)?.id ??
+                                            ""),
+                          );
+                        },
                       ),
                     ],
                   )
@@ -64,7 +73,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
     return timeago.format(DateTime.fromMillisecondsSinceEpoch(timestamp));
   }
 
-  Widget _buildRoomItem(types.Room room) {
+  Widget _buildRoomItem(types.Room room, WidgetRef ref) {
     final isSelected = ref.watch(selectedRoomProvider) == room;
     final isLargeScreen = MediaQuery.of(context).size.width >= 800;
 
@@ -190,9 +199,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           ),
         ),
         Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 7
-          ),
+          padding: EdgeInsets.symmetric(horizontal: 7),
           height: 35,
           child: TextField(
             onTap: () => context.go("/search_users"),
@@ -214,38 +221,48 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           ),
         ),
         const SizedBox(height: 10),
+        // Then, in your widget:
         Expanded(
-          child: StreamBuilder<List<types.Room>>(
-            stream: ChatlyChatCore.instance.rooms(),
-            initialData: const [],
-            builder: (context, snapshot) {
-              // if (snapshot.connectionState == ConnectionState.waiting) {
-              //   return const Center(
-              //     child: LoadingWidget(),
-              //   );
-              // }
+          child: Consumer(
+            builder: (context, ref, child) {
+              final roomsAsync = ref.watch(roomsStreamProvider);
 
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(
+              return roomsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(
                   child: Text(
-                    'No rooms available',
+                    'Error loading rooms',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.error,
                         ),
                   ),
-                );
-              }
+                ),
+                data: (rooms) {
+                  if (rooms.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No rooms available',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                    );
+                  }
 
-              final sortedRooms = List<types.Room>.from(snapshot.data!)
-                ..sort(
-                    (a, b) => (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
+                  final sortedRooms = List<types.Room>.from(rooms)
+                    ..sort((a, b) =>
+                        (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 1),
-                itemCount: sortedRooms.length,
-                itemBuilder: (context, index) {
-                  final room = sortedRooms[index];
-                  return _buildRoomItem(room);
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 1),
+                    itemCount: sortedRooms.length,
+                    itemBuilder: (context, index) {
+                      final room = sortedRooms[index];
+                      return _buildRoomItem(room, ref);
+                    },
+                  );
                 },
               );
             },

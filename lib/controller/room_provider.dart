@@ -7,3 +7,8 @@ final roomStreamProvider =
     StreamProvider.autoDispose.family<types.Room, String>((ref, roomId) {
   return ChatlyChatCore.instance.room(roomId);
 });
+
+// First, create a stream provider for the rooms
+final roomsStreamProvider = StreamProvider.autoDispose<List<types.Room>>((ref) {
+  return ChatlyChatCore.instance.rooms();
+});
