@@ -5,7 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:iconly/iconly.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -25,6 +25,144 @@ class MessageBubble extends StatelessWidget {
     required this.roomId,
     this.metadata,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    final messageColors = Theme.of(context).extension<MessageColors>()!;
+    final theme = Theme.of(context);
+    final colorScheme = context.colorScheme;
+    final isEdited = message.isEdited ?? false;
+    final isDeleted = message.isDeleted ?? false;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: isDeleted
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment:
+                  isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+              children: [
+                if (!isMe) // Show avatar only for other users
+                  _userAvatar(colorScheme, theme),
+                _deletedBox(theme),
+              ],
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment:
+                  isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+              children: [
+                if (!isMe) // Show avatar only for other users
+                  _userAvatar(colorScheme, theme),
+
+                /// Message box
+                GestureDetector(
+                  onTap: () {
+                    // Web-specific download/open logic
+                    if (message is types.FileMessage) {
+                      _downloadFile(message as types.FileMessage, context);
+                    }
+                  },
+                  onLongPress: onLongPress,
+                  child: Row(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: isMe
+                              ? messageColors.current.withValues(alpha: 0.2)
+                              : messageColors.otherColor,
+                          borderRadius: _bubbleBorderRadius(),
+                        ),
+                        child: IntrinsicWidth(
+                          child: Column(
+                            crossAxisAlignment: isMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (!isMe) SizedBox(height: 5),
+                              if (!isMe) _buildSenderName(theme),
+                              if (message.repliedMessage != null)
+                                _buildReplyWidget(
+                                  theme,
+                                  message.repliedMessage!,
+                                  isMe,
+                                  messageColors,
+                                ),
+                              const SizedBox(height: 5),
+                              _buildMessageContent(theme, colorScheme),
+                              _buildMessageStatus(theme, context, isEdited),
+                              const SizedBox(height: 5),
+                            ],
+                          ),
+                        ),
+                      ),
+                      !isMe
+                          ? Center(
+                              child: Material(
+                                color: context.onPrimary,
+                                borderRadius: BorderRadius.circular(100),
+                                shadowColor: Colors.red,
+                                child: InkWell(
+                                  onTap: () {},
+                                  child: Container(
+                                    padding: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      // color: context.onPrimary,
+                                    ),
+                                    child: Icon(
+                                      IconlyLight.heart,
+                                      size: 15,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container()
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Container _deletedBox(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.do_not_disturb_on_rounded,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            "Message Deleted", // Using translation
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _downloadFile(
     types.FileMessage fileMessage,
@@ -61,97 +199,6 @@ class MessageBubble extends StatelessWidget {
       );
       debugPrint('File download error: $e');
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final messageColors = Theme.of(context).extension<MessageColors>()!;
-    final theme = Theme.of(context);
-    final colorScheme = context.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          if (!isMe) // Show avatar only for other users
-            _userAvatar(colorScheme, theme),
-
-          /// Message box
-          GestureDetector(
-            onTap: () {
-              // Web-specific download/open logic
-              if (message is types.FileMessage) {
-                _downloadFile(message as types.FileMessage, context);
-              }
-            },
-            onLongPress: onLongPress,
-            child: Row(
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    color: isMe
-                        ? messageColors.current.withValues(alpha: 0.2)
-                        : messageColors.otherColor,
-                    borderRadius: _bubbleBorderRadius(),
-                  ),
-                  child: IntrinsicWidth(
-                    child: Column(
-                      crossAxisAlignment: isMe
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!isMe) SizedBox(height: 5),
-                        if (!isMe) _buildSenderName(theme),
-                        if (message.repliedMessage != null)
-                          _buildReplyWidget(
-                            theme,
-                            message.repliedMessage!,
-                            isMe,
-                            messageColors,
-                          ),
-                        const SizedBox(height: 5),
-                        _buildMessageContent(theme, colorScheme),
-                        _buildMessageStatus(theme, context),
-                        const SizedBox(height: 5),
-                      ],
-                    ),
-                  ),
-                ),
-                !isMe
-                    ? Center(
-                        child: Material(
-                          color: context.onPrimary,
-                          borderRadius: BorderRadius.circular(100),
-                          shadowColor: Colors.red,
-                          child: InkWell(
-                            onTap: () {},
-                            child: Container(
-                              padding: EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                // color: context.onPrimary,
-                              ),
-                              child: Icon(
-                                IconlyLight.heart,
-                                size: 15,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container()
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   BorderRadius _bubbleBorderRadius() {
@@ -357,7 +404,8 @@ class MessageBubble extends StatelessWidget {
     return const Text('Unsupported message type');
   }
 
-  Widget _buildMessageStatus(ThemeData theme, BuildContext context) {
+  Widget _buildMessageStatus(
+      ThemeData theme, BuildContext context, bool isEdited) {
     final isSeen = message.metadata?['seen'] == true;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10),
@@ -365,13 +413,21 @@ class MessageBubble extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          isEdited
+              ? Container(
+                  margin: EdgeInsets.only(right: 8),
+                  child: Text(
+                    "Edited",
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                )
+              : Container(),
           Text(
             _formatTime(message.createdAt ?? 0),
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              // color: isMe
-              //     ? theme.colorScheme.onPrimary.withValues(alpha: 0.7)
-              //     : theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(width: 10),

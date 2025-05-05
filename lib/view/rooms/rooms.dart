@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
 import '../chat/chat.dart';
 
 // same imports...

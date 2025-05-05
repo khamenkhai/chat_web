@@ -4,9 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-
-
+import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
 
 /// Provides access to Firebase chat data. Singleton, use
 /// ChatlyChatCore.instance to aceess methods.
@@ -849,5 +847,72 @@ class ChatlyChatCore {
       return message.metadata!['replyTo'] as types.Message;
     }
     return null;
+  }
+
+  /// Edits an existing text message and marks it as edited in metadata
+  Future<void> editTextMessage({
+    required String roomId,
+    required String messageId,
+    required String newText,
+  }) async {
+    if (firebaseUser == null) return;
+
+    // First get the existing message to verify ownership
+    final messageDoc = await getFirebaseFirestore()
+        .collection('${config.roomsCollectionName}/$roomId/messages')
+        .doc(messageId)
+        .get();
+
+    if (!messageDoc.exists) throw Exception('Message not found');
+    if (messageDoc.data()?['authorId'] != firebaseUser!.uid) {
+      throw Exception('Only message author can edit');
+    }
+
+    // Update the message with new text and edited metadata
+    await getFirebaseFirestore()
+        .collection('${config.roomsCollectionName}/$roomId/messages')
+        .doc(messageId)
+        .update({
+      'text': newText,
+      "isEdited" : true,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'metadata': {
+        ...messageDoc.data()?['metadata'] ?? {},
+        'edited': true,
+        'editedAt': FieldValue.serverTimestamp(),
+      },
+    });
+  }
+  /// Edits an existing text message and marks it as edited in metadata
+  Future<void> setDeleteMessage({
+    required String roomId,
+    required String messageId,
+
+  }) async {
+    if (firebaseUser == null) return;
+
+    // First get the existing message to verify ownership
+    final messageDoc = await getFirebaseFirestore()
+        .collection('${config.roomsCollectionName}/$roomId/messages')
+        .doc(messageId)
+        .get();
+
+    if (!messageDoc.exists) throw Exception('Message not found');
+    if (messageDoc.data()?['authorId'] != firebaseUser!.uid) {
+      throw Exception('Only message author can edit');
+    }
+
+    // Update the message with new text and edited metadata
+    await getFirebaseFirestore()
+        .collection('${config.roomsCollectionName}/$roomId/messages')
+        .doc(messageId)
+        .update({
+      "isDeleted" : true,
+      'updatedAt': FieldValue.serverTimestamp(),
+      // 'metadata': {
+      //   ...messageDoc.data()?['metadata'] ?? {},
+      //   'deletedAt': FieldValue.serverTimestamp(),
+      // },
+    });
   }
 }

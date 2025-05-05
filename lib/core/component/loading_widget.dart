@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class LoadingWidget extends StatelessWidget {
-  const LoadingWidget({super.key, this.color, this.radius = 15});
+  const LoadingWidget({super.key, this.color, this.radius = 10});
   final Color? color;
   final double radius;
 

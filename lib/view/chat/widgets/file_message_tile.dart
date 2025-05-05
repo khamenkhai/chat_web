@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
 
 class FileMessageTile extends StatelessWidget {
   final types.FileMessage message;
