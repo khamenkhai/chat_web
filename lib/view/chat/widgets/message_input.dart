@@ -8,7 +8,7 @@ import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
-import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/models/flutter_chat_types.dart' as types;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
@@ -41,6 +41,7 @@ class _MessageInputState extends State<MessageInput> {
       child: Consumer(
         builder: (context, ref, child) {
           final isAttachmentUploading = ref.watch(attachmentUploadingProvider);
+          final isImageUploading = ref.watch(imageUploadingProvider);
 
           return Row(
             children: [
@@ -53,19 +54,29 @@ class _MessageInputState extends State<MessageInput> {
                       ),
                       onPressed: () => _handleFileSelection(ref),
                     ),
-              IconButton(
-                icon: Icon(
-                  IconlyLight.image_2,
-                  color: Theme.of(context).disabledColor,
-                ),
-                onPressed: () => _handleImageSelection(ref, context),
-              ),
+              isImageUploading
+                  ? LoadingWidget()
+                  : IconButton(
+                      icon: Icon(
+                        IconlyLight.image_2,
+                        color: Theme.of(context).disabledColor,
+                      ),
+                      onPressed: () => _handleImageSelection(ref, context),
+                    ),
               Expanded(
                 child: TextField(
                   controller: _textController,
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
                     border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
                     ),
@@ -145,7 +156,7 @@ class _MessageInputState extends State<MessageInput> {
           imageQuality: 70, maxWidth: 1440, source: ImageSource.gallery);
       if (result == null) return;
 
-      ref.read(attachmentUploadingProvider.notifier).state = true;
+      ref.read(imageUploadingProvider.notifier).state = true;
 
       final bytes = await result.readAsBytes();
       final image = await decodeImageFromList(bytes);
@@ -177,7 +188,7 @@ class _MessageInputState extends State<MessageInput> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
     } finally {
-      ref.read(attachmentUploadingProvider.notifier).state = false;
+      ref.read(imageUploadingProvider.notifier).state = false;
     }
   }
 }

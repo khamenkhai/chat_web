@@ -56,6 +56,7 @@ dependencies:
   easy_localization: ^3.0.7+1
   json_annotation: ^4.9.0
   equatable: ^2.0.7
+  skeletonizer: ^1.4.3
   # flutter_firebase_chat_core: ^1.6.8
 
 dev_dependencies:

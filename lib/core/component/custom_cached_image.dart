@@ -22,12 +22,12 @@ class CustomNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Image.network(
-      imageUrl,
-      errorBuilder: (context, error, stackTrace) {
-        return const Icon(Icons.error); // or a placeholder image
-      },
-    );
+    // Image.network(
+    //   imageUrl,
+    //   errorBuilder: (context, error, stackTrace) {
+    //     return const Icon(Icons.error); // or a placeholder image
+    //   },
+    // );
 
     return CachedNetworkImage(
       imageUrl: imageUrl,

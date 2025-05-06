@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/models/flutter_chat_types.dart' as types;
 
 /// Provides access to Firebase chat data. Singleton, use
 /// ChatlyChatCore.instance to aceess methods.
@@ -282,72 +282,6 @@ class ChatlyChatCore {
     );
   }
 
-  Stream<List<types.Message>> messages2(
-    types.Room room, {
-    List<Object?>? endAt,
-    List<Object?>? endBefore,
-    int? limit,
-    List<Object?>? startAfter,
-    List<Object?>? startAt,
-  }) {
-    var query = getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/${room.id}/messages')
-        .orderBy('createdAt', descending: true);
-
-    if (endAt != null) {
-      query = query.endAt(endAt);
-    }
-
-    if (endBefore != null) {
-      query = query.endBefore(endBefore);
-    }
-
-    if (limit != null) {
-      query = query.limit(limit);
-    }
-
-    if (startAfter != null) {
-      query = query.startAfter(startAfter);
-    }
-
-    if (startAt != null) {
-      query = query.startAt(startAt);
-    }
-
-    return query.snapshots().map(
-          (snapshot) => snapshot.docs.fold<List<types.Message>>(
-            [],
-            (previousValue, doc) {
-              final data = doc.data();
-              final author = room.users.firstWhere(
-                (u) => u.id == data['authorId'],
-                orElse: () => types.User(id: data['authorId'] as String),
-              );
-
-              data['author'] = author.toJson();
-              data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
-              data['id'] = doc.id;
-              data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
-
-              /// Check if the message has been seen by all users
-              final seenBy = data['seenBy'] as Map<String, dynamic>? ?? {};
-              final allUsersHaveSeen =
-                  room.users.every((user) => seenBy.containsKey(user.id));
-
-              return [
-                ...previousValue,
-                types.Message.fromJson(data).copyWith(
-                  metadata: {
-                    ...data['metadata'] ?? {},
-                    'seen': allUsersHaveSeen,
-                  },
-                ),
-              ];
-            },
-          ),
-        );
-  }
-
   /// Returns a stream of changes in a room from Firebase.
   Stream<types.Room> room(String roomId) {
     final fu = firebaseUser;
@@ -400,6 +334,30 @@ class ChatlyChatCore {
             config.usersCollectionName,
           ),
         );
+  }
+
+  Future<List<types.Room>> roomList({bool orderByUpdatedAt = false}) async {
+    final fu = firebaseUser;
+
+    if (fu == null) return [];
+
+    final collection = orderByUpdatedAt
+        ? getFirebaseFirestore()
+            .collection(config.roomsCollectionName)
+            .where('userIds', arrayContains: fu.uid)
+            .orderBy('updatedAt', descending: true)
+        : getFirebaseFirestore()
+            .collection(config.roomsCollectionName)
+            .where('userIds', arrayContains: fu.uid);
+
+    final query = await collection.get();
+
+    return processRoomsQuery(
+      fu,
+      getFirebaseFirestore(),
+      query,
+      config.usersCollectionName,
+    );
   }
 
   /// Sends a message to the Firestore. Accepts any partial message and a
@@ -770,85 +728,6 @@ class ChatlyChatCore {
     return message;
   }
 
-  /// Gets a single message by its ID from a specific room with reply support
-  Future<types.Message?> getMessageById({
-    required String roomId,
-    required String messageId,
-  }) async {
-    try {
-      final doc = await getFirebaseFirestore()
-          .collection('${config.roomsCollectionName}/$roomId/messages')
-          .doc(messageId)
-          .get();
-
-      if (!doc.exists) return null;
-
-      final data = doc.data() as Map<String, dynamic>;
-      final room = await getFirebaseFirestore()
-          .collection(config.roomsCollectionName)
-          .doc(roomId)
-          .get();
-
-      if (!room.exists) return null;
-
-      // Process the room to get users list
-      final processedRoom = await processRoomDocument(
-        room,
-        firebaseUser!,
-        getFirebaseFirestore(),
-        config.usersCollectionName,
-      );
-
-      // Find the author in room's users
-      final author = processedRoom.users.firstWhere(
-        (u) => u.id == data['authorId'],
-        orElse: () => types.User(id: data['authorId'] as String),
-      );
-
-      data['author'] = author.toJson();
-      data['createdAt'] =
-          (data['createdAt'] as Timestamp).millisecondsSinceEpoch;
-      data['id'] = doc.id;
-      data['updatedAt'] =
-          (data['updatedAt'] as Timestamp).millisecondsSinceEpoch;
-
-      // Handle seen status
-      final seenBy = data['seenBy'] as Map<String, dynamic>? ?? {};
-      final allUsersHaveSeen =
-          processedRoom.users.every((user) => seenBy.containsKey(user.id));
-
-      // Create the message
-      final message = types.Message.fromJson(data).copyWith(
-        metadata: {
-          ...data['metadata'] ?? {},
-          'seen': allUsersHaveSeen,
-        },
-      );
-
-      // Process reply metadata if exists
-      return _processReplyMetadata(message, processedRoom);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting message by ID: $e');
-      }
-      return null;
-    }
-  }
-
-  /// Checks if a message is a reply to another message
-  bool isReplyMessage(types.Message message) {
-    return message.metadata?['replyTo'] != null &&
-        message.metadata!['replyTo'] is types.Message;
-  }
-
-  /// Gets the original message that this message is replying to
-  types.Message? getRepliedMessage(types.Message message) {
-    if (isReplyMessage(message)) {
-      return message.metadata!['replyTo'] as types.Message;
-    }
-    return null;
-  }
-
   /// Edits an existing text message and marks it as edited in metadata
   Future<void> editTextMessage({
     required String roomId,
@@ -874,7 +753,7 @@ class ChatlyChatCore {
         .doc(messageId)
         .update({
       'text': newText,
-      "isEdited" : true,
+      "isEdited": true,
       'updatedAt': FieldValue.serverTimestamp(),
       'metadata': {
         ...messageDoc.data()?['metadata'] ?? {},
@@ -883,11 +762,11 @@ class ChatlyChatCore {
       },
     });
   }
+
   /// Edits an existing text message and marks it as edited in metadata
   Future<void> setDeleteMessage({
     required String roomId,
     required String messageId,
-
   }) async {
     if (firebaseUser == null) return;
 
@@ -907,7 +786,7 @@ class ChatlyChatCore {
         .collection('${config.roomsCollectionName}/$roomId/messages')
         .doc(messageId)
         .update({
-      "isDeleted" : true,
+      "isDeleted": true,
       'updatedAt': FieldValue.serverTimestamp(),
       // 'metadata': {
       //   ...messageDoc.data()?['metadata'] ?? {},

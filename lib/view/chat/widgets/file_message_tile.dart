@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/models/flutter_chat_types.dart' as types;
+import 'package:iconly/iconly.dart';
 
 class FileMessageTile extends StatelessWidget {
   final types.FileMessage message;
@@ -14,14 +15,7 @@ class FileMessageTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       margin: EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.dividerColor.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
+    
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -49,7 +43,7 @@ class FileMessageTile extends StatelessWidget {
   }
 
   IconData _getFileIcon(String? mimeType) {
-    if (mimeType == null) return Icons.insert_drive_file;
+    if (mimeType == null) return IconlyLight.document;
 
     if (mimeType.contains('pdf')) return Icons.picture_as_pdf;
     if (mimeType.contains('word')) return Icons.description;
@@ -60,7 +54,7 @@ class FileMessageTile extends StatelessWidget {
     if (mimeType.contains('audio')) return Icons.audiotrack;
     if (mimeType.contains('video')) return Icons.videocam;
 
-    return Icons.insert_drive_file;
+    return IconlyLight.document;
   }
 
   String _formatFileSize(num size) {

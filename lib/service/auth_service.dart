@@ -1,23 +1,41 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:riverpod/riverpod.dart';
-
-// Service provider
-final authServiceProvider = Provider<AuthService>((ref) => AuthService());
-
-// Auth state stream provider
-final authStateProvider = StreamProvider<User?>(
-  (ref) => ref.watch(authServiceProvider).authStateChanges,
-);
+import 'package:chat_web/models/flutter_chat_types.dart' as types;
+import 'package:chat_web/service/chat_service.dart';
 
 class AuthService {
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<User?> authStateChanges() => _auth.authStateChanges();
 
-  Future<User?> signIn(String email, String password) async {
-    final result = await _auth.signInWithEmailAndPassword(
-        email: email, password: password);
-    return result.user;
+  Future<void> signInWithEmailAndPassword(String email, String password) async {
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> signUpWithEmailAndPassword({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String imageUrl,
+  }) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    await ChatlyChatCore.instance.createUserInFirestore(
+      types.User(
+        id: credential.user!.uid,
+        firstName: firstName,
+        lastName: lastName,
+        imageUrl: imageUrl,
+      ),
+    );
+  }
+
+  Future<User?> getCurrentUser()async{
+    return _auth.currentUser;
   }
 
   Future<void> signOut() async {

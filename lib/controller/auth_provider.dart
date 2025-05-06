@@ -1,8 +1,7 @@
-import 'package:chat_web/service/chat_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/service/auth_service.dart';
 
 // AUTH STATE
 @immutable
@@ -35,16 +34,16 @@ class AuthError extends AuthState {
 // PROVIDER
 final authControllerProvider =
     StateNotifierProvider<AuthController, AuthState>(
-  (ref) => AuthController(ref),
+  (ref) => AuthController(ref, AuthService()),
 );
 
 // CONTROLLER
 class AuthController extends StateNotifier<AuthState> {
   final Ref ref;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AuthService authService;
 
-  AuthController(this.ref) : super(const AuthInitial()) {
-    _auth.authStateChanges().listen((user) {
+  AuthController(this.ref, this.authService) : super(const AuthInitial()) {
+    authService.authStateChanges().listen((user) {
       if (user != null) {
         state = AuthAuthenticated(user);
       } else {
@@ -53,11 +52,10 @@ class AuthController extends StateNotifier<AuthState> {
     });
   }
 
-  Future<void> signInWithEmailAndPassword(
-      String email, String password) async {
+  Future<void> signInWithEmailAndPassword(String email, String password) async {
     try {
       state = const AuthLoading();
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      await authService.signInWithEmailAndPassword(email, password);
     } on FirebaseAuthException catch (e) {
       state = AuthError(e.message ?? 'Sign in failed');
     }
@@ -72,18 +70,12 @@ class AuthController extends StateNotifier<AuthState> {
   }) async {
     try {
       state = const AuthLoading();
-      final credential = await _auth.createUserWithEmailAndPassword(
+      await authService.signUpWithEmailAndPassword(
         email: email,
         password: password,
-      );
-
-      await ChatlyChatCore.instance.createUserInFirestore(
-        types.User(
-          id: credential.user!.uid,
-          firstName: firstName,
-          lastName: lastName,
-          imageUrl: imageUrl,
-        ),
+        firstName: firstName,
+        lastName: lastName,
+        imageUrl: imageUrl,
       );
     } on FirebaseAuthException catch (e) {
       state = AuthError(e.message ?? 'Sign up failed');
@@ -92,10 +84,14 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+   Future<User?> getCurrentUser()async{
+    return authService.getCurrentUser();
+  }
+
   Future<void> signOut() async {
     try {
       state = const AuthLoading();
-      await _auth.signOut();
+      await authService.signOut();
     } catch (e) {
       state = AuthError('Sign out failed');
     }

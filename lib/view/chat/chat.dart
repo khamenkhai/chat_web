@@ -1,19 +1,21 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:io';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
-import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/models/flutter_chat_types.dart' as types;
 import 'package:chat_web/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/edit_message_dialog.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
 import 'package:chat_web/view/chat/widgets/message_input.dart';
 import 'package:chat_web/view/chat/widgets/message_options_dialog.dart';
 import 'package:chat_web/view/theme/theme_switch.dart';
+import 'package:chat_web/view/utils/util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 // Provider for tracking attachment upload state
@@ -29,6 +31,47 @@ class ChatPage extends StatelessWidget {
   const ChatPage({super.key, required this.roomId});
   final String roomId;
 
+  Future<String> getImageUrl(String path) async {
+    final ref = FirebaseStorage.instance.ref().child(path);
+    return await ref.getDownloadURL();
+  }
+
+
+  Widget _buildAvatar(types.Room room) {
+    var color = Colors.transparent;
+
+    if (room.type == types.RoomType.direct) {
+      try {
+        final otherUser = room.users.firstWhere(
+          (u) => u.id != "",
+        );
+
+        color = getUserAvatarNameColor(otherUser);
+      } catch (e) {
+        // Do nothing if other user is not found.
+      }
+    }
+
+    final hasImage = room.imageUrl != null;
+    final name = room.name ?? '';
+
+ 
+
+    return Container(
+      margin: const EdgeInsets.only(right: 16),
+      child: CircleAvatar(
+        backgroundImage: hasImage ? NetworkImage("${room.imageUrl}") : null,
+        radius: 20,
+        child: !hasImage
+            ? Text(
+                name.isEmpty ? '' : name[0].toUpperCase(),
+                style: const TextStyle(color: Colors.white),
+              )
+            : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     debugPrint("=> chat page rebuilds!");
@@ -36,15 +79,27 @@ class ChatPage extends StatelessWidget {
     return Consumer(
       builder: (context, ref, _) {
         final room = ref.read(selectedRoomProvider.notifier).state;
+
         return Scaffold(
           appBar: AppBar(
-            systemOverlayStyle: SystemUiOverlayStyle.light,
-            title: Text(room?.name ?? ""),
-            actions: const [ThemeSwitch()],
-            elevation: 10,
+            toolbarHeight: 60,
+            title: ListTile(
+              contentPadding: EdgeInsets.all(0),
+              minVerticalPadding: 1,
+              leading: _buildAvatar(room!),
+              title: Text(room.name ?? ""),
+              subtitle: Text(
+                "Last seen today at 5:30 PM",
+                style: TextStyle(fontSize: 12, height: 0),
+              ),
+            ),
+            leadingWidth: 0,
+            actions: const [
+              ThemeSwitch(),
+            ],
             surfaceTintColor: Colors.transparent,
           ),
-          body: room == null ? Container() : _ChatContent(room: room),
+          body: _ChatContent(room: room),
         );
       },
     );
@@ -52,7 +107,7 @@ class ChatPage extends StatelessWidget {
 }
 
 class _ChatContent extends StatelessWidget {
-  _ChatContent({required this.room});
+  const _ChatContent({required this.room});
   final types.Room room;
 
   Future<void> _handleMessageTap(
@@ -76,15 +131,20 @@ class _ChatContent extends StatelessWidget {
     }
   }
 
-  final Logger logger = Logger();
 
   @override
   Widget build(BuildContext context) {
+
+    final isLargeScreen = MediaQuery.of(context).size.width >= 800;
+
     debugPrint("=> chat content rebuilds!");
+
     return Consumer(
       builder: (context, ref, child) {
+
         final messagesAsync = ref.watch(messagesStreamProvider(room));
         final isAttachmentUploading = ref.watch(attachmentUploadingProvider);
+
         final replyTo = ref.watch(replyMessageProvider);
         // final editTo = ref.watch(editMessageProvider);
         return messagesAsync.when(
@@ -94,12 +154,19 @@ class _ChatContent extends StatelessWidget {
             debugPrint("=> message rebuilds!");
             return Column(
               children: [
+                Divider(
+                  height: 1,
+                  thickness: 0.5,
+                ),
                 Expanded(
                   child: CustomScrollView(
                     reverse: true,
                     slivers: [
                       SliverPadding(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: isLargeScreen ? 100 : 10,
+                        ),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
@@ -114,73 +181,11 @@ class _ChatContent extends StatelessWidget {
                                     .markMessageAsSeen(room.id, message.id);
                               }
 
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
-                                child: Align(
-                                  alignment: isMe
-                                      ? Alignment.centerRight
-                                      : Alignment.centerLeft,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth:
-                                          MediaQuery.of(context).size.width *
-                                              0.75,
-                                    ),
-                                    child: MessageBubble(
-                                      message: message,
-                                      isMe: isMe,
-                                      roomId: room.id,
-                                      metadata: message.metadata,
-                                      onTap: () =>
-                                          _handleMessageTap(context, message),
-                                      onLongPress: () {
-                                        if (isMe) {
-                                          showMessageOptionsDialog(
-                                            context: context,
-                                            onEdit: () {
-                                              if (message
-                                                  is types.TextMessage) {
-                                                showEditMessageDialog(
-                                                  context: context,
-                                                  initialMessage: message.text,
-                                                  onSave: (p0) {
-                                                    ChatlyChatCore.instance
-                                                        .editTextMessage(
-                                                      roomId: room.id,
-                                                      messageId: message.id,
-                                                      newText: p0,
-                                                    );
-                                                  },
-                                                );
-                                              }
-                                            },
-                                            onDelete: () {
-                                              ChatlyChatCore.instance
-                                                  .setDeleteMessage(
-                                                roomId: room.id,
-                                                messageId: message.id,
-                                              );
-                                            },
-                                            onReply: () {
-                                              ref
-                                                  .read(replyMessageProvider
-                                                      .notifier)
-                                                  .state = message;
-                                            },
-                                            isTextMessage:
-                                                message is types.TextMessage,
-                                          );
-                                        } else {
-                                          ref
-                                              .read(
-                                                  replyMessageProvider.notifier)
-                                              .state = message;
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ),
+                              return _messageBubble(
+                                isMe,
+                                context,
+                                message,
+                                ref,
                               );
                             },
                             childCount: messages.length,
@@ -222,6 +227,65 @@ class _ChatContent extends StatelessWidget {
     );
   }
 
+  /// Message bubble
+  Align _messageBubble(
+    bool isMe,
+    BuildContext context,
+    types.Message message,
+    WidgetRef ref,
+  ) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        child: MessageBubble(
+          message: message,
+          isMe: isMe,
+          roomId: room.id,
+          metadata: message.metadata,
+          onTap: () => _handleMessageTap(context, message),
+          onLongPress: () {
+            if (isMe) {
+              showMessageOptionsDialog(
+                context: context,
+                onEdit: () {
+                  if (message is types.TextMessage) {
+                    showEditMessageDialog(
+                      context: context,
+                      initialMessage: message.text,
+                      onSave: (p0) {
+                        ChatlyChatCore.instance.editTextMessage(
+                          roomId: room.id,
+                          messageId: message.id,
+                          newText: p0,
+                        );
+                      },
+                    );
+                  }
+                },
+                onDelete: () {
+                  ChatlyChatCore.instance.setDeleteMessage(
+                    roomId: room.id,
+                    messageId: message.id,
+                  );
+                },
+                onReply: () {
+                  ref.read(replyMessageProvider.notifier).state = message;
+                },
+                isTextMessage: message is types.TextMessage,
+              );
+            } else {
+              ref.read(replyMessageProvider.notifier).state = message;
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Reply to widget
   Container _replyToWidget(types.Message replyTo, WidgetRef ref) {
     return Container(
       color: Colors.grey[200],

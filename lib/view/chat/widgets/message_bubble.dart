@@ -5,7 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/models/flutter_chat_types.dart' as types;
 import 'package:iconly/iconly.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -35,7 +35,7 @@ class MessageBubble extends StatelessWidget {
     final isDeleted = message.isDeleted ?? false;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
       child: isDeleted
           ? Row(
               mainAxisSize: MainAxisSize.min,
@@ -83,7 +83,6 @@ class MessageBubble extends StatelessWidget {
                                 : CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (!isMe) SizedBox(height: 5),
                               if (!isMe) _buildSenderName(theme),
                               if (message.repliedMessage != null)
                                 _buildReplyWidget(
@@ -92,7 +91,9 @@ class MessageBubble extends StatelessWidget {
                                   isMe,
                                   messageColors,
                                 ),
-                              const SizedBox(height: 5),
+                              message is types.FileMessage
+                                  ? Container()
+                                  : const SizedBox(height: 5),
                               _buildMessageContent(theme, colorScheme),
                               _buildMessageStatus(theme, context, isEdited),
                               const SizedBox(height: 5),
@@ -133,10 +134,10 @@ class MessageBubble extends StatelessWidget {
 
   Container _deletedBox(ThemeData theme) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.symmetric(vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.outline.withValues(alpha: 0.2),
@@ -155,9 +156,10 @@ class MessageBubble extends StatelessWidget {
           Text(
             "Message Deleted", // Using translation
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-              fontStyle: FontStyle.italic,
-            ),
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                fontStyle: FontStyle.italic,
+                fontSize: 12),
           ),
         ],
       ),

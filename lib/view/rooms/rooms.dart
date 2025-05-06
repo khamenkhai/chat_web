@@ -1,5 +1,6 @@
 import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
+import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/service/chat_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,20 +8,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:chat_web/flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/models/flutter_chat_types.dart' as types;
 import '../chat/chat.dart';
 
-// same imports...
-
-class RoomsPage extends StatefulWidget {
+class RoomsPage extends ConsumerStatefulWidget {
   const RoomsPage({super.key});
 
   @override
-  State<RoomsPage> createState() => _RoomsPageState();
+  ConsumerState<RoomsPage> createState() => _RoomsPageState();
 }
 
-class _RoomsPageState extends State<RoomsPage> {
-  void logout() async {
+class _RoomsPageState extends ConsumerState<RoomsPage> {
+  Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
   }
 
@@ -35,66 +34,174 @@ class _RoomsPageState extends State<RoomsPage> {
             return isLargeScreen
                 ? Row(
                     children: [
-                      Container(
-                        width: 350,
-                        // width: MediaQuery.of(context).size.width / 4,
-                        decoration: BoxDecoration(
-                          border: Border(
-                            right: BorderSide(
-                              color: Colors.grey,
-                              width: 0.5,
-                            ),
-                          ),
-                        ),
-                        child: _buildRoomsList(),
-                      ),
-                      Consumer(
-                        builder: (context, ref, child) {
-                          return Expanded(
-                            child: ref.watch(selectedRoomProvider) == null
-                                ? _buildEmptyState()
-                                : ChatPage(
-                                    roomId:
-                                        ref.read(selectedRoomProvider)?.id ??
-                                            ""),
-                          );
-                        },
-                      ),
+                      _buildRoomsSidebar(),
+                      _buildChatArea(),
                     ],
                   )
-                : _buildRoomsList();
+                : _buildRoomsSidebar();
           },
         ),
       ),
     );
   }
 
-  String formatTimeAgo(int timestamp) {
-    return timeago.format(DateTime.fromMillisecondsSinceEpoch(timestamp));
+  Widget _buildRoomsSidebar() {
+    return Container(
+      width: 350,
+      decoration: BoxDecoration(
+        border: Border(
+          right: BorderSide(
+            color: Colors.grey,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildAppBar(),
+          _buildSearchField(),
+          const SizedBox(height: 10),
+          _buildRoomsList(),
+        ],
+      ),
+    );
   }
 
-  Widget _buildRoomItem(types.Room room, WidgetRef ref) {
+  Widget _buildChatArea() {
+    return Expanded(
+      child: ref.watch(selectedRoomProvider) == null
+          ? _buildEmptyState()
+          : ChatPage(roomId: ref.read(selectedRoomProvider)?.id ?? ""),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Text(
+            'Chats',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const Spacer(),
+          PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            onSelected: (value) {
+              if (value == 'logout') _logout();
+              if (value == 'users') context.go("/users");
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'logout', child: Text('Logout')),
+              const PopupMenuItem(value: 'Setting', child: Text('Setting')),
+              const PopupMenuItem(value: 'users', child: Text('Users')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7),
+      height: 35,
+      child: TextField(
+        onTap: () => context.go("/search_users"),
+        decoration: InputDecoration(
+          enabled: false,
+          hintText: 'Search...',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoomsList() {
+    final roomsAsync = ref.watch(roomsFutureProvider);
+
+    return Expanded(
+      child: roomsAsync.when(
+        loading: () => LoadingWidget(),
+        error: (error, stack) => _buildErrorState(),
+        data: (rooms) =>
+            rooms.isEmpty ? _buildEmptyListState() : _buildRoomList(rooms),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Text(
+        'Error loading rooms',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.error,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyListState() {
+    return Center(
+      child: Text(
+        'No rooms available',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildRoomList(List<types.Room> rooms) {
+    final sortedRooms = List<types.Room>.from(rooms)
+      ..sort((a, b) => (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      itemCount: sortedRooms.length,
+      itemBuilder: (context, index) {
+        final room = sortedRooms[index];
+        return _buildRoomItem(room);
+      },
+    );
+  }
+
+  Widget _buildRoomItem(types.Room room) {
     final isSelected = ref.watch(selectedRoomProvider) == room;
     final isLargeScreen = MediaQuery.of(context).size.width >= 800;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
+      // padding: const EdgeInsets.symmetric(horizontal: 8),
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: isSelected && isLargeScreen
-            ? Theme.of(context)
-                .colorScheme
-                .primaryContainer
-                .withValues(alpha: 0.15)
+            ? Theme.of(context).colorScheme.primaryContainer.withAlpha(38)
             : Theme.of(context)
                 .colorScheme
                 .surfaceContainerHighest
-                .withValues(alpha: 0.05),
+                .withAlpha(13),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: 5),
-        leading: CircleAvatar(),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 5),
+        leading: const CircleAvatar(),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         title: Text(
           room.name ?? 'Unknown',
@@ -117,18 +224,12 @@ class _RoomsPageState extends State<RoomsPage> {
           },
         ),
         trailing: Text(
-          formatTimeAgo(room.updatedAt ?? 0),
+          _formatTimeAgo(room.updatedAt ?? 0),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(context).colorScheme.outline,
               ),
         ),
-        onTap: () {
-          if (isLargeScreen) {
-            ref.read(selectedRoomProvider.notifier).state = room;
-          } else {
-            context.go("/chat/${room.id}", extra: room.id);
-          }
-        },
+        onTap: () => _onRoomTap(room),
       ),
     );
   }
@@ -167,108 +268,16 @@ class _RoomsPageState extends State<RoomsPage> {
     );
   }
 
-  Widget _buildRoomsList() {
-    return Column(
-      children: [
-        Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Text(
-                'Chats',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              PopupMenuButton<String>(
-                padding: EdgeInsets.all(0),
-                onSelected: (value) {
-                  if (value == 'logout') logout();
-                  if (value == 'users') context.go("/users");
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'logout', child: Text('Logout')),
-                  const PopupMenuItem(value: 'Setting', child: Text('Setting')),
-                  const PopupMenuItem(value: 'users', child: Text('Users')),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 7),
-          height: 35,
-          child: TextField(
-            onTap: () => context.go("/search_users"),
-            decoration: InputDecoration(
-              hintText: 'Search...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-            onChanged: (text) {
-              setState(() {});
-            },
-          ),
-        ),
-        const SizedBox(height: 10),
-        // Then, in your widget:
-        Expanded(
-          child: Consumer(
-            builder: (context, ref, child) {
-              final roomsAsync = ref.watch(roomsStreamProvider);
+  String _formatTimeAgo(int timestamp) {
+    return timeago.format(DateTime.fromMillisecondsSinceEpoch(timestamp));
+  }
 
-              return roomsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(
-                  child: Text(
-                    'Error loading rooms',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                  ),
-                ),
-                data: (rooms) {
-                  if (rooms.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No rooms available',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                      ),
-                    );
-                  }
-
-                  final sortedRooms = List<types.Room>.from(rooms)
-                    ..sort((a, b) =>
-                        (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    itemCount: sortedRooms.length,
-                    itemBuilder: (context, index) {
-                      final room = sortedRooms[index];
-                      return _buildRoomItem(room, ref);
-                    },
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
-    );
+  void _onRoomTap(types.Room room) {
+    final isLargeScreen = MediaQuery.of(context).size.width >= 800;
+    if (isLargeScreen) {
+      ref.read(selectedRoomProvider.notifier).state = room;
+    } else {
+      context.go("/chat/${room.id}", extra: room.id);
+    }
   }
 }
