@@ -51,12 +51,14 @@ dependencies:
   go_router: ^15.1.1
   flutter_riverpod: ^2.6.1
   shared_preferences: ^2.5.3
-  responsive_framework: ^1.5.1
   iconly: ^1.0.1
   easy_localization: ^3.0.7+1
   json_annotation: ^4.9.0
   equatable: ^2.0.7
   skeletonizer: ^1.4.3
+  responsive_builder: ^0.7.1
+  flutter_animate: ^4.5.2
+  photo_view: ^0.15.0
   # flutter_firebase_chat_core: ^1.6.8
 
 dev_dependencies:

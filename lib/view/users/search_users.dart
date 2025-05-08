@@ -1,7 +1,7 @@
-import 'package:chat_web/service/chat_service.dart';
+import 'package:chat_web/fire_chat/service/chat_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:chat_web/models/flutter_chat_types.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 import 'package:go_router/go_router.dart';
 import '../utils/util.dart';
 
@@ -30,7 +30,7 @@ class SearchUsers extends StatelessWidget {
   }
 
   void _handlePressed(types.User otherUser, BuildContext context) async {
-    final room = await ChatlyChatCore.instance.createRoom(otherUser);
+    final room = await FireChat.instance.createRoom(otherUser);
     if(!context.mounted) return;
     context.go("/chat",extra: room);
   
@@ -43,7 +43,7 @@ class SearchUsers extends StatelessWidget {
           title: const Text('Users'),
         ),
         body: StreamBuilder<List<types.User>>(
-          stream: ChatlyChatCore.instance.users(),
+          stream: FireChat.instance.users(),
           initialData: const [],
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data!.isEmpty) {

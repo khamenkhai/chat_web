@@ -1,52 +1,27 @@
-import 'package:chat_web/core/const/chatly_chat_core_config.dart';
+import 'dart:async';
 import 'package:chat_web/core/utils/chat_util.dart';
+import 'package:chat_web/fire_chat/const/fire_chat_const.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:chat_web/models/flutter_chat_types.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 
-/// Provides access to Firebase chat data. Singleton, use
-/// ChatlyChatCore.instance to aceess methods.
-class ChatlyChatCore {
-  ChatlyChatCore._privateConstructor() {
+class FireChat {
+  FireChat._privateConstructor() {
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
       firebaseUser = user;
     });
   }
 
-  /// Config to set custom names for rooms and users collections. Also
-  /// see [ChatlyChatCoreConfig].
-  ChatlyChatCoreConfig config = const ChatlyChatCoreConfig(
-    null,
-    'rooms',
-    'users',
-  );
+  static final FireChat instance = FireChat._privateConstructor();
 
-  /// Current logged in user in Firebase. Does not update automatically.
-  /// Use [FirebaseAuth.authStateChanges] to listen to the state changes.
+  /// Current logged-in user. Update is handled internally.
   User? firebaseUser = FirebaseAuth.instance.currentUser;
 
-  /// Singleton instance.
-  static final ChatlyChatCore instance = ChatlyChatCore._privateConstructor();
+  /// Getter for FirebaseFirestore singleton
+  FirebaseFirestore get getFirebaseFirestore => FirebaseFirestore.instance;
 
-  /// Gets proper [FirebaseFirestore] instance.
-  FirebaseFirestore getFirebaseFirestore() => config.firebaseAppName != null
-      ? FirebaseFirestore.instanceFor(
-          app: Firebase.app(config.firebaseAppName!),
-        )
-      : FirebaseFirestore.instance;
-
-  /// Sets custom config to change default names for rooms
-  /// and users collections. Also see [ChatlyChatCoreConfig].
-  void setConfig(ChatlyChatCoreConfig chatlyChatCoreConfig) {
-    config = chatlyChatCoreConfig;
-  }
-
-  /// Creates a chat group room with [users]. Creator is automatically
-  /// added to the group. [name] is required and will be used as
-  /// a group name. Add an optional [imageUrl] that will be a group avatar
-  /// and [metadata] for any additional custom data.
+  /// create room
   Future<types.Room> createGroupRoom({
     types.Role creatorRole = types.Role.admin,
     String? imageUrl,
@@ -57,16 +32,16 @@ class ChatlyChatCore {
     if (firebaseUser == null) return Future.error('User does not exist');
 
     final currentUser = await fetchUser(
-      getFirebaseFirestore(),
+      getFirebaseFirestore,
       firebaseUser!.uid,
-      config.usersCollectionName,
+      FireChatConst.usersCollectionName,
       role: creatorRole.toShortString(),
     );
 
     final roomUsers = [types.User.fromJson(currentUser)] + users;
 
-    final room = await getFirebaseFirestore()
-        .collection(config.roomsCollectionName)
+    final room = await getFirebaseFirestore
+        .collection(FireChatConst.roomsCollectionName)
         .add({
       'createdAt': FieldValue.serverTimestamp(),
       'imageUrl': imageUrl,
@@ -108,8 +83,8 @@ class ChatlyChatCore {
     // this will make it easy to find the room if exist and make one read only.
     final userIds = [fu.uid, otherUser.id]..sort();
 
-    final roomQuery = await getFirebaseFirestore()
-        .collection(config.roomsCollectionName)
+    final roomQuery = await getFirebaseFirestore
+        .collection(FireChatConst.roomsCollectionName)
         .where('type', isEqualTo: types.RoomType.direct.toShortString())
         .where('userIds', isEqualTo: userIds)
         .limit(1)
@@ -119,9 +94,9 @@ class ChatlyChatCore {
     if (roomQuery.docs.isNotEmpty) {
       final room = (await processRoomsQuery(
         fu,
-        getFirebaseFirestore(),
+        getFirebaseFirestore,
         roomQuery,
-        config.usersCollectionName,
+        FireChatConst.usersCollectionName,
       ))
           .first;
 
@@ -130,8 +105,8 @@ class ChatlyChatCore {
 
     // To support old chats created without sorted array,
     // try to check the room by reversing user ids array.
-    final oldRoomQuery = await getFirebaseFirestore()
-        .collection(config.roomsCollectionName)
+    final oldRoomQuery = await getFirebaseFirestore
+        .collection(FireChatConst.roomsCollectionName)
         .where('type', isEqualTo: types.RoomType.direct.toShortString())
         .where('userIds', isEqualTo: userIds.reversed.toList())
         .limit(1)
@@ -141,9 +116,9 @@ class ChatlyChatCore {
     if (oldRoomQuery.docs.isNotEmpty) {
       final room = (await processRoomsQuery(
         fu,
-        getFirebaseFirestore(),
+        getFirebaseFirestore,
         oldRoomQuery,
-        config.usersCollectionName,
+        FireChatConst.usersCollectionName,
       ))
           .first;
 
@@ -151,16 +126,16 @@ class ChatlyChatCore {
     }
 
     final currentUser = await fetchUser(
-      getFirebaseFirestore(),
+      getFirebaseFirestore,
       fu.uid,
-      config.usersCollectionName,
+      FireChatConst.usersCollectionName,
     );
 
     final users = [types.User.fromJson(currentUser), otherUser];
 
     // Create new room with sorted user ids array.
-    final room = await getFirebaseFirestore()
-        .collection(config.roomsCollectionName)
+    final room = await getFirebaseFirestore
+        .collection(FireChatConst.roomsCollectionName)
         .add({
       'createdAt': FieldValue.serverTimestamp(),
       'imageUrl': null,
@@ -183,8 +158,8 @@ class ChatlyChatCore {
   /// Creates [types.User] in Firebase to store name and avatar used on
   /// rooms list.
   Future<void> createUserInFirestore(types.User user) async {
-    await getFirebaseFirestore()
-        .collection(config.usersCollectionName)
+    await getFirebaseFirestore
+        .collection(FireChatConst.usersCollectionName)
         .doc(user.id)
         .set({
       'createdAt': FieldValue.serverTimestamp(),
@@ -200,30 +175,29 @@ class ChatlyChatCore {
 
   /// Removes message document.
   Future<void> deleteMessage(String roomId, String messageId) async {
-    await getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/$roomId/messages')
+    await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .doc(messageId)
         .delete();
   }
 
   /// Removes room document.
   Future<void> deleteRoom(String roomId) async {
-    await getFirebaseFirestore()
-        .collection(config.roomsCollectionName)
+    await getFirebaseFirestore
+        .collection(FireChatConst.roomsCollectionName)
         .doc(roomId)
         .delete();
   }
 
   /// Removes [types.User] from `users` collection in Firebase.
   Future<void> deleteUserFromFirestore(String userId) async {
-    await getFirebaseFirestore()
-        .collection(config.usersCollectionName)
+    await getFirebaseFirestore
+        .collection(FireChatConst.usersCollectionName)
         .doc(userId)
         .delete();
   }
 
   /// Returns a stream of messages from Firebase for a given room.
-  ///
   ////// Returns a stream of messages from Firebase for a given room.
   /// Now with enhanced reply support.
   Stream<List<types.Message>> messages(
@@ -234,8 +208,8 @@ class ChatlyChatCore {
     List<Object?>? startAfter,
     List<Object?>? startAt,
   }) {
-    var query = getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/${room.id}/messages')
+    var query = getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/${room.id}/messages')
         .orderBy('createdAt', descending: true);
 
     if (endAt != null) query = query.endAt(endAt);
@@ -288,50 +262,41 @@ class ChatlyChatCore {
 
     if (fu == null) return const Stream.empty();
 
-    return getFirebaseFirestore()
-        .collection(config.roomsCollectionName)
+    return getFirebaseFirestore
+        .collection(FireChatConst.roomsCollectionName)
         .doc(roomId)
         .snapshots()
         .asyncMap(
           (doc) => processRoomDocument(
             doc,
             fu,
-            getFirebaseFirestore(),
-            config.usersCollectionName,
+            getFirebaseFirestore,
+            FireChatConst.usersCollectionName,
           ),
         );
   }
 
-  /// Returns a stream of rooms from Firebase. Only rooms where current
-  /// logged in user exist are returned. [orderByUpdatedAt] is used in case
-  /// you want to have last modified rooms on top, there are a couple
-  /// of things you will need to do though:
-  /// 1) Make sure `updatedAt` exists on all rooms
-  /// 2) Write a Cloud Function which will update `updatedAt` of the room
-  /// when the room changes or new messages come in
-  /// 3) Create an Index (Firestore Database -> Indexes tab) where collection ID
-  /// is `rooms`, field indexed are `userIds` (type Arrays) and `updatedAt`
-  /// (type Descending), query scope is `Collection`.
+  /// get rooms data list
   Stream<List<types.Room>> rooms({bool orderByUpdatedAt = false}) {
     final fu = firebaseUser;
 
     if (fu == null) return const Stream.empty();
 
     final collection = orderByUpdatedAt
-        ? getFirebaseFirestore()
-            .collection(config.roomsCollectionName)
+        ? getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
             .where('userIds', arrayContains: fu.uid)
             .orderBy('updatedAt', descending: true)
-        : getFirebaseFirestore()
-            .collection(config.roomsCollectionName)
+        : getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
             .where('userIds', arrayContains: fu.uid);
 
     return collection.snapshots().asyncMap(
           (query) => processRoomsQuery(
             fu,
-            getFirebaseFirestore(),
+            getFirebaseFirestore,
             query,
-            config.usersCollectionName,
+            FireChatConst.usersCollectionName,
           ),
         );
   }
@@ -342,27 +307,24 @@ class ChatlyChatCore {
     if (fu == null) return [];
 
     final collection = orderByUpdatedAt
-        ? getFirebaseFirestore()
-            .collection(config.roomsCollectionName)
+        ? getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
             .where('userIds', arrayContains: fu.uid)
             .orderBy('updatedAt', descending: true)
-        : getFirebaseFirestore()
-            .collection(config.roomsCollectionName)
+        : getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
             .where('userIds', arrayContains: fu.uid);
 
     final query = await collection.get();
 
     return processRoomsQuery(
       fu,
-      getFirebaseFirestore(),
+      getFirebaseFirestore,
       query,
-      config.usersCollectionName,
+      FireChatConst.usersCollectionName,
     );
   }
 
-  /// Sends a message to the Firestore. Accepts any partial message and a
-  /// room ID. If arbitraty data is provided in the [partialMessage]
-  /// does nothing.
   void sendMessageReply(types.Message partialMessage, String roomId) async {
     if (firebaseUser == null) return;
 
@@ -379,8 +341,8 @@ class ChatlyChatCore {
       /// Sender has seen the message
     };
 
-    await getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/$roomId/messages')
+    await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .add(messageMap);
 
     // Extract the text content of the message
@@ -395,8 +357,8 @@ class ChatlyChatCore {
       lastMessageText = 'Custom Message';
     }
 
-    await getFirebaseFirestore()
-        .collection(config.roomsCollectionName)
+    await getFirebaseFirestore
+        .collection(FireChatConst.roomsCollectionName)
         .doc(roomId)
         .update({
       'updatedAt': FieldValue.serverTimestamp(),
@@ -450,8 +412,8 @@ class ChatlyChatCore {
         /// Sender has seen the message
       };
 
-      await getFirebaseFirestore()
-          .collection('${config.roomsCollectionName}/$roomId/messages')
+      await getFirebaseFirestore
+          .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
           .add(messageMap);
 
       // Extract the text content of the message
@@ -466,8 +428,8 @@ class ChatlyChatCore {
         lastMessageText = 'Custom Message';
       }
 
-      await getFirebaseFirestore()
-          .collection(config.roomsCollectionName)
+      await getFirebaseFirestore
+          .collection(FireChatConst.roomsCollectionName)
           .doc(roomId)
           .update({
         'updatedAt': FieldValue.serverTimestamp(),
@@ -489,14 +451,12 @@ class ChatlyChatCore {
     messageMap['authorId'] = message.author.id;
     messageMap['updatedAt'] = FieldValue.serverTimestamp();
 
-    await getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/$roomId/messages')
+    await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .doc(message.id)
         .update(messageMap);
   }
 
-  /// Updates a room in the Firestore. Accepts any room.
-  /// Room will probably be taken from the [rooms] stream.
   void updateRoom(types.Room room) async {
     if (firebaseUser == null) return;
 
@@ -528,8 +488,8 @@ class ChatlyChatCore {
     roomMap['updatedAt'] = FieldValue.serverTimestamp();
     roomMap['userIds'] = room.users.map((u) => u.id).toList();
 
-    await getFirebaseFirestore()
-        .collection(config.roomsCollectionName)
+    await getFirebaseFirestore
+        .collection(FireChatConst.roomsCollectionName)
         .doc(room.id)
         .update(roomMap);
   }
@@ -537,8 +497,8 @@ class ChatlyChatCore {
   /// Returns a stream of all users from Firebase.
   Stream<List<types.User>> users() {
     if (firebaseUser == null) return const Stream.empty();
-    return getFirebaseFirestore()
-        .collection(config.usersCollectionName)
+    return getFirebaseFirestore
+        .collection(FireChatConst.usersCollectionName)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs.fold<List<types.User>>(
@@ -571,8 +531,8 @@ class ChatlyChatCore {
 
     if (!hasSeen) {
       /// Update the `seenBy` field only if the user hasn't seen the message yet
-      await getFirebaseFirestore()
-          .collection('${config.roomsCollectionName}/$roomId/messages')
+      await getFirebaseFirestore
+          .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
           .doc(messageId)
           .update({
         'seenBy.${fu.uid}': FieldValue.serverTimestamp(),
@@ -587,8 +547,8 @@ class ChatlyChatCore {
     if (fu == null) return false;
 
     /// Fetch the current message document
-    final messageDoc = await getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/$roomId/messages')
+    final messageDoc = await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .doc(messageId)
         .get();
 
@@ -610,8 +570,8 @@ class ChatlyChatCore {
   /// Fetches the custom `lastMsg` field for a specific room by its ID.
   Future<String?> getLastMessage(String roomId) async {
     try {
-      final roomDoc = await getFirebaseFirestore()
-          .collection(config.roomsCollectionName)
+      final roomDoc = await getFirebaseFirestore
+          .collection(FireChatConst.roomsCollectionName)
           .doc(roomId)
           .get();
 
@@ -664,7 +624,6 @@ class ChatlyChatCore {
         repliedMessage: originalMessage,
         metadata: {
           ...partialReply.metadata ?? {},
-          // 'replyTo': originalMessage.toJson(),
         },
       );
     } else if (partialReply is types.PartialFile) {
@@ -676,7 +635,6 @@ class ChatlyChatCore {
         repliedMessage: originalMessage,
         metadata: {
           ...partialReply.metadata ?? {},
-          // 'replyTo': originalMessage.toJson(),
         },
       );
     } else if (partialReply is types.PartialCustom) {
@@ -688,23 +646,18 @@ class ChatlyChatCore {
         repliedMessage: originalMessage,
         metadata: {
           ...partialReply.metadata ?? {},
-          // 'replyTo': originalMessage.toJson(),
         },
       );
     }
 
     if (replyMessage != null) {
-      debugPrint("=> reply message : $replyMessage");
+      // debugPrint("=> reply message : $replyMessage");
       sendMessageReply(replyMessage, roomId);
     } else {
-      debugPrint("=> reply message : $replyMessage");
+      // debugPrint("=> reply message : $replyMessage");
     }
   }
 
-  /// Processes message replies when fetching messages from Firestore
-  /// to properly reconstruct the reply relationship
-  /// Processes replied messages when fetching messages from Firestore
-  /// to properly set the author from room users
   types.Message _processReplyMetadata(
     types.Message message,
     types.Room room,
@@ -717,13 +670,11 @@ class ChatlyChatCore {
         orElse: () =>
             repliedMessage.author, // Fall back to original author if not found
       );
-
       // Return message with updated repliedMessage author
       return message.copyWith(
         repliedMessage: repliedMessage.copyWith(author: originalAuthor),
       );
     }
-
     // Return original message if no replied message
     return message;
   }
@@ -737,8 +688,8 @@ class ChatlyChatCore {
     if (firebaseUser == null) return;
 
     // First get the existing message to verify ownership
-    final messageDoc = await getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/$roomId/messages')
+    final messageDoc = await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .doc(messageId)
         .get();
 
@@ -748,8 +699,8 @@ class ChatlyChatCore {
     }
 
     // Update the message with new text and edited metadata
-    await getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/$roomId/messages')
+    await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .doc(messageId)
         .update({
       'text': newText,
@@ -771,8 +722,8 @@ class ChatlyChatCore {
     if (firebaseUser == null) return;
 
     // First get the existing message to verify ownership
-    final messageDoc = await getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/$roomId/messages')
+    final messageDoc = await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .doc(messageId)
         .get();
 
@@ -782,16 +733,60 @@ class ChatlyChatCore {
     }
 
     // Update the message with new text and edited metadata
-    await getFirebaseFirestore()
-        .collection('${config.roomsCollectionName}/$roomId/messages')
+    await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .doc(messageId)
-        .update({
-      "isDeleted": true,
-      'updatedAt': FieldValue.serverTimestamp(),
-      // 'metadata': {
-      //   ...messageDoc.data()?['metadata'] ?? {},
-      //   'deletedAt': FieldValue.serverTimestamp(),
-      // },
+        .update(
+      {
+        "isDeleted": true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+  }
+
+  /// Returns a stream of the last message in a room, checking if it's deleted
+  Stream<types.Message?> lastMessageStream(String roomId) {
+    return getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
+        .orderBy('createdAt', descending: true)
+        .limit(1)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      if (snapshot.docs.isEmpty) return null;
+
+      final doc = snapshot.docs.first;
+      final data = doc.data();
+
+      // Skip if message is deleted
+      // if (data['isDeleted'] == true) return null;
+
+      // Get room to resolve author info
+      final roomDoc = await getFirebaseFirestore
+          .collection(FireChatConst.roomsCollectionName)
+          .doc(roomId)
+          .get();
+
+      if (!roomDoc.exists) return null;
+
+      final room = await processRoomDocument(
+        roomDoc,
+        firebaseUser!,
+        getFirebaseFirestore,
+        FireChatConst.usersCollectionName,
+      );
+
+      final author = room.users.firstWhere(
+        (u) => u.id == data['authorId'],
+        orElse: () => types.User(id: data['authorId'] as String),
+      );
+
+      data['author'] = author.toJson();
+      data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+      data['id'] = doc.id;
+      data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+      data['isDeleted'] = data['isDeleted'];
+
+      return types.Message.fromJson(data);
     });
   }
 }

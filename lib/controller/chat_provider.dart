@@ -1,11 +1,11 @@
-import 'package:chat_web/service/chat_service.dart';
+import 'package:chat_web/fire_chat/service/chat_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:chat_web/models/flutter_chat_types.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 
 // Stream provider for messages
 final messagesStreamProvider = StreamProvider.autoDispose
     .family<List<types.Message>, types.Room>((ref, room) {
-  return ChatlyChatCore.instance.messages(room);
+  return FireChat.instance.messages(room);
 });
 
 // Provider for attachment uploading state

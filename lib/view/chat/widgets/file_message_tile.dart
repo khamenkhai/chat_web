@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:chat_web/models/flutter_chat_types.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 import 'package:iconly/iconly.dart';
 
 class FileMessageTile extends StatelessWidget {
+  
   final types.FileMessage message;
-
   const FileMessageTile({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
+
     final theme = Theme.of(context);
     final icon = _getFileIcon(message.mimeType);
 
     return Container(
       padding: const EdgeInsets.all(8),
       margin: EdgeInsets.symmetric(horizontal: 10),
-    
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -24,10 +24,13 @@ class FileMessageTile extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                message.name,
-                style: theme.textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis,
+              SizedBox(
+                width: (message.name.length.toDouble() * 3),
+                child: Text(
+                  message.name,
+                  style: theme.textTheme.bodyMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               Text(
                 _formatFileSize(message.size),

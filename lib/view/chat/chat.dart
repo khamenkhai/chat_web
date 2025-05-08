@@ -1,10 +1,8 @@
-// ignore_for_file: unused_local_variable
-
 import 'dart:io';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
-import 'package:chat_web/models/flutter_chat_types.dart' as types;
-import 'package:chat_web/service/chat_service.dart';
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
+import 'package:chat_web/fire_chat/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/edit_message_dialog.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
 import 'package:chat_web/view/chat/widgets/message_input.dart';
@@ -19,11 +17,11 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 // Provider for tracking attachment upload state
-final attachmentUploadingProvider =
-    StateProvider.autoDispose<bool>((ref) => false);
+final attachmentUploadingProvider = StateProvider.autoDispose<bool>((ref) => false);
 
 // Provider for managing reply message state
 final replyMessageProvider = StateProvider<types.Message?>((ref) => null);
+
 final editMessageProvider = StateProvider<String>((ref) => "");
 
 /// Main chat page widget that displays a chat room
@@ -36,15 +34,13 @@ class ChatPage extends StatelessWidget {
     return await ref.getDownloadURL();
   }
 
-
   Widget _buildAvatar(types.Room room) {
     var color = Colors.transparent;
 
     if (room.type == types.RoomType.direct) {
       try {
-        final otherUser = room.users.firstWhere(
-          (u) => u.id != "",
-        );
+        final otherUser = room.users
+            .firstWhere((u) => u.id != FirebaseAuth.instance.currentUser?.uid);
 
         color = getUserAvatarNameColor(otherUser);
       } catch (e) {
@@ -55,12 +51,11 @@ class ChatPage extends StatelessWidget {
     final hasImage = room.imageUrl != null;
     final name = room.name ?? '';
 
- 
-
     return Container(
       margin: const EdgeInsets.only(right: 16),
       child: CircleAvatar(
-        backgroundImage: hasImage ? NetworkImage("${room.imageUrl}") : null,
+        backgroundColor: hasImage ? Colors.transparent : color,
+        backgroundImage: hasImage ? NetworkImage(room.imageUrl!) : null,
         radius: 20,
         child: !hasImage
             ? Text(
@@ -78,6 +73,7 @@ class ChatPage extends StatelessWidget {
     // Watch for room data changes
     return Consumer(
       builder: (context, ref, _) {
+
         final room = ref.read(selectedRoomProvider.notifier).state;
 
         return Scaffold(
@@ -115,7 +111,7 @@ class _ChatContent extends StatelessWidget {
     if (message is types.FileMessage && message.uri.startsWith('http')) {
       try {
         final updated = message.copyWith(isLoading: true);
-        ChatlyChatCore.instance.updateMessage(updated, room.id);
+        FireChat.instance.updateMessage(updated, room.id);
 
         final res = await http.get(Uri.parse(message.uri));
         final dir = (await getApplicationDocumentsDirectory()).path;
@@ -126,27 +122,23 @@ class _ChatContent extends StatelessWidget {
         }
       } finally {
         final updated = message.copyWith(isLoading: false);
-        ChatlyChatCore.instance.updateMessage(updated, room.id);
+        FireChat.instance.updateMessage(updated, room.id);
       }
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-
-    final isLargeScreen = MediaQuery.of(context).size.width >= 800;
 
     debugPrint("=> chat content rebuilds!");
 
     return Consumer(
       builder: (context, ref, child) {
-
         final messagesAsync = ref.watch(messagesStreamProvider(room));
         final isAttachmentUploading = ref.watch(attachmentUploadingProvider);
 
         final replyTo = ref.watch(replyMessageProvider);
-        // final editTo = ref.watch(editMessageProvider);
+
         return messagesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) => Center(child: Text('Error: $error')),
@@ -165,7 +157,7 @@ class _ChatContent extends StatelessWidget {
                       SliverPadding(
                         padding: EdgeInsets.symmetric(
                           vertical: 8,
-                          horizontal: isLargeScreen ? 100 : 10,
+                          horizontal: 20,
                         ),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
@@ -177,7 +169,7 @@ class _ChatContent extends StatelessWidget {
                               // _onRoomOpened(room.id, messages);
                               if (message.author.id !=
                                   FirebaseAuth.instance.currentUser?.uid) {
-                                ChatlyChatCore.instance
+                                FireChat.instance
                                     .markMessageAsSeen(room.id, message.id);
                               }
 
@@ -200,17 +192,18 @@ class _ChatContent extends StatelessWidget {
                   const LinearProgressIndicator(minHeight: 2),
                 MessageInput(
                   onSend: (text) {
+
                     final reply = ref.read(replyMessageProvider);
 
                     if (reply != null) {
                       ///to send reply message
-                      ChatlyChatCore.instance.sendReply(
+                      FireChat.instance.sendReply(
                         originalMessage: reply,
                         partialReply: types.PartialText(text: text),
                         roomId: room.id,
                       );
                     } else {
-                      ChatlyChatCore.instance.sendMessage(
+                      FireChat.instance.sendMessage(
                         types.PartialText(text: text),
                         room.id,
                       );
@@ -256,7 +249,7 @@ class _ChatContent extends StatelessWidget {
                       context: context,
                       initialMessage: message.text,
                       onSave: (p0) {
-                        ChatlyChatCore.instance.editTextMessage(
+                        FireChat.instance.editTextMessage(
                           roomId: room.id,
                           messageId: message.id,
                           newText: p0,
@@ -266,7 +259,7 @@ class _ChatContent extends StatelessWidget {
                   }
                 },
                 onDelete: () {
-                  ChatlyChatCore.instance.setDeleteMessage(
+                  FireChat.instance.setDeleteMessage(
                     roomId: room.id,
                     messageId: message.id,
                   );

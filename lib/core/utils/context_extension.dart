@@ -14,4 +14,5 @@ extension ThemeContext on BuildContext {
   Color get surface => theme.colorScheme.surface;
   Color get onSurface => theme.colorScheme.onSurface;
   Color get onSurfaceVariant => theme.colorScheme.onSurfaceVariant;
+  Color get tertiary => theme.colorScheme.tertiary;
 }

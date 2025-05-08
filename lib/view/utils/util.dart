@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:chat_web/models/flutter_chat_types.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 
 const colors = [
   Color(0xffff6767),

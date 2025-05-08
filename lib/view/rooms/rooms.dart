@@ -1,14 +1,17 @@
 import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
-import 'package:chat_web/service/chat_service.dart';
+import 'package:chat_web/core/utils/context_extension.dart';
+import 'package:chat_web/fire_chat/service/chat_service.dart';
+import 'package:chat_web/view/utils/util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:chat_web/models/flutter_chat_types.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 import '../chat/chat.dart';
 
 class RoomsPage extends ConsumerStatefulWidget {
@@ -23,38 +26,74 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
     await FirebaseAuth.instance.signOut();
   }
 
+  Widget _buildAvatar(types.Room room) {
+    var color = Colors.transparent;
+
+    if (room.type == types.RoomType.direct) {
+      try {
+        final otherUser = room.users
+            .firstWhere((u) => u.id != FirebaseAuth.instance.currentUser?.uid);
+
+        color = getUserAvatarNameColor(otherUser);
+      } catch (e) {
+        // Do nothing if other user is not found.
+      }
+    }
+
+    final hasImage = room.imageUrl != null;
+    final name = room.name ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(right: 16),
+      child: CircleAvatar(
+        backgroundColor: hasImage ? Colors.transparent : color,
+        backgroundImage: hasImage ? NetworkImage(room.imageUrl!) : null,
+        radius: 20,
+        child: !hasImage
+            ? Text(
+                name.isEmpty ? '' : name[0].toUpperCase(),
+                style: const TextStyle(color: Colors.white),
+              )
+            : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     debugPrint("=> room page rebuild!");
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isLargeScreen = constraints.maxWidth >= 800;
-            return isLargeScreen
-                ? Row(
-                    children: [
-                      _buildRoomsSidebar(),
-                      _buildChatArea(),
-                    ],
-                  )
-                : _buildRoomsSidebar();
-          },
+    return ScreenTypeLayout.builder(
+      mobile: (context) => Scaffold(
+        body: SafeArea(child: _buildRoomsSidebar(isMobile: true)),
+      ),
+      tablet: (context) => Scaffold(
+        body: SafeArea(child: _buildRoomsSidebar(isMobile: true)),
+      ),
+      desktop: (context) => Scaffold(
+        body: SafeArea(
+          child: Row(
+            children: [
+              _buildRoomsSidebar(),
+              _buildChatArea(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildRoomsSidebar() {
+  Widget _buildRoomsSidebar({bool isMobile = false}) {
     return Container(
-      width: 350,
+      width: isMobile ? double.infinity : 350,
       decoration: BoxDecoration(
-        border: Border(
-          right: BorderSide(
-            color: Colors.grey,
-            width: 0.5,
-          ),
-        ),
+        border: isMobile
+            ? Border()
+            : Border(
+                right: BorderSide(
+                  color: Colors.grey,
+                  width: 0.5,
+                ),
+              ),
       ),
       child: Column(
         children: [
@@ -107,27 +146,27 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
   }
 
   Widget _buildSearchField() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7),
-      height: 35,
-      child: TextField(
-        onTap: () => context.go("/search_users"),
-        decoration: InputDecoration(
-          enabled: false,
-          hintText: 'Search...',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide.none,
-          ),
-          filled: true,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
+    return GestureDetector(
+      onTap: () => context.go("/users"),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 7),
+        padding: EdgeInsets.only(left: 15),
+        height: 35,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          color: context.colorScheme.tertiary,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Search...",
+              textAlign: TextAlign.start,
+              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+            ),
+          ],
         ),
       ),
     );
@@ -184,14 +223,17 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
 
   Widget _buildRoomItem(types.Room room) {
     final isSelected = ref.watch(selectedRoomProvider) == room;
-    final isLargeScreen = MediaQuery.of(context).size.width >= 800;
+    final isDesktop =
+        getDeviceType(MediaQuery.of(context).size) == DeviceScreenType.desktop;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      // padding: const EdgeInsets.symmetric(horizontal: 8),
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
-        color: isSelected && isLargeScreen
+        color: isSelected && isDesktop
             ? Theme.of(context).colorScheme.primaryContainer.withAlpha(38)
             : Theme.of(context)
                 .colorScheme
@@ -201,7 +243,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 5),
-        leading: const CircleAvatar(),
+        leading: _buildAvatar(room),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         title: Text(
           room.name ?? 'Unknown',
@@ -210,11 +252,26 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
               .titleSmall
               ?.copyWith(fontWeight: FontWeight.w600),
         ),
-        subtitle: FutureBuilder(
-          future: ChatlyChatCore.instance.getLastMessage(room.id),
-          builder: (context, lastMsgSnap) {
+        subtitle: StreamBuilder<types.Message?>(
+          stream: FireChat.instance.lastMessageStream(room.id),
+          builder: (context, snapshot) {
+            final lastMsg = snapshot.data;
+
+            String displayText;
+            if (lastMsg is types.TextMessage) {
+              displayText = lastMsg.text;
+            } else if (lastMsg is types.ImageMessage) {
+              displayText = '🖼️ Image';
+            } else if (lastMsg is types.FileMessage) {
+              displayText = '📄 File';
+            } else if (lastMsg == null) {
+              displayText = '...';
+            } else {
+              displayText = 'Unsupported message';
+            }
+
             return Text(
-              lastMsgSnap.data ?? "No messages yet",
+              displayText,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -273,8 +330,11 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
   }
 
   void _onRoomTap(types.Room room) {
-    final isLargeScreen = MediaQuery.of(context).size.width >= 800;
-    if (isLargeScreen) {
+    final deviceType = getDeviceType(MediaQuery.of(context).size);
+    final isDesktop = deviceType == DeviceScreenType.desktop;
+    // ||   deviceType == DeviceScreenType.tablet;
+
+    if (isDesktop) {
       ref.read(selectedRoomProvider.notifier).state = room;
     } else {
       context.go("/chat/${room.id}", extra: room.id);

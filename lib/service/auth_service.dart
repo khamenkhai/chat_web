@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:chat_web/models/flutter_chat_types.dart' as types;
-import 'package:chat_web/service/chat_service.dart';
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
+import 'package:chat_web/fire_chat/service/chat_service.dart';
 
 class AuthService {
 
@@ -24,7 +24,7 @@ class AuthService {
       password: password,
     );
 
-    await ChatlyChatCore.instance.createUserInFirestore(
+    await FireChat.instance.createUserInFirestore(
       types.User(
         id: credential.user!.uid,
         firstName: firstName,

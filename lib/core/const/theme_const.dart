@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 @immutable
 class AppTheme {
   // System UI Overlay Styles
-  static const SystemUiOverlayStyle _lightSystemOverlayStyle = SystemUiOverlayStyle(
+  static const SystemUiOverlayStyle _lightSystemOverlayStyle =
+      SystemUiOverlayStyle(
     statusBarBrightness: Brightness.dark,
     statusBarIconBrightness: Brightness.dark,
     statusBarColor: Colors.transparent,
@@ -12,7 +13,8 @@ class AppTheme {
     systemNavigationBarIconBrightness: Brightness.dark,
   );
 
-  static const SystemUiOverlayStyle _darkSystemOverlayStyle = SystemUiOverlayStyle(
+  static const SystemUiOverlayStyle _darkSystemOverlayStyle =
+      SystemUiOverlayStyle(
     statusBarBrightness: Brightness.light,
     statusBarIconBrightness: Brightness.light,
     statusBarColor: Colors.transparent,
@@ -101,24 +103,23 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: ColorScheme.light(
-        primary: _primary,
-        onPrimary: _primaryForeground,
-        secondary: _secondary,
-        onSecondary: _secondaryForeground,
-        error: _destructive,
-        onError: _destructiveForeground,
-        surface: Colors.white,
-        onSurface: Colors.black,
-        onSurfaceVariant: _mutedForeground,
-      ),
+          primary: _primary,
+          onPrimary: _primaryForeground,
+          secondary: _secondary,
+          onSecondary: _secondaryForeground,
+          error: _destructive,
+          onError: _destructiveForeground,
+          surface: Colors.white,
+          onSurface: Colors.black,
+          onSurfaceVariant: _mutedForeground,
+          tertiary: _muted),
       extensions: <ThemeExtension<dynamic>>[
         MessageColors(
-          current: _lightMessageCurrent,
-          otherColor: _lightMessageOther,
-          currentText: _lightMessageCurrentText,
-          otherText: _lightMessageOtherText,
-          replyColor: Colors.grey.shade300
-        ),
+            current: _lightMessageCurrent,
+            otherColor: _lightMessageOther,
+            currentText: _lightMessageCurrentText,
+            otherText: _lightMessageOtherText,
+            replyColor: Colors.grey.shade300),
       ],
       scaffoldBackgroundColor: Colors.white,
       appBarTheme: AppBarTheme(
@@ -326,14 +327,14 @@ class AppTheme {
         surface: const Color(0xFF0F172A),
         onSurface: Colors.white,
         onSurfaceVariant: _darkMutedForeground,
-        
+        tertiary: _darkMuted,
       ),
       extensions: <ThemeExtension<dynamic>>[
         MessageColors(
           current: _darkMessageCurrent,
           otherColor: _darkMessageOther,
           currentText: _darkMessageCurrentText,
-          replyColor: Colors.grey.shade700,
+          replyColor: const Color.fromARGB(255, 97, 97, 97),
           otherText: _darkMessageOtherText,
         ),
       ],

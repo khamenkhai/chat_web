@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:chat_web/models/src/user.dart' as types;
+import 'package:chat_web/fire_chat/models/src/user.dart' as types;
 import 'package:crypto/crypto.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
