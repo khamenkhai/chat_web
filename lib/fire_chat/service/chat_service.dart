@@ -4,7 +4,7 @@ import 'package:chat_web/fire_chat/const/fire_chat_const.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:chat_web/fire_chat/models/message_models.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as mm;
 
 class FireChat {
   FireChat._privateConstructor() {
@@ -22,12 +22,12 @@ class FireChat {
   FirebaseFirestore get getFirebaseFirestore => FirebaseFirestore.instance;
 
   /// create room
-  Future<types.Room> createGroupRoom({
-    types.Role creatorRole = types.Role.admin,
+  Future<mm.Room> createGroupRoom({
+    mm.Role creatorRole = mm.Role.admin,
     String? imageUrl,
     Map<String, dynamic>? metadata,
     required String name,
-    required List<types.User> users,
+    required List<mm.User> users,
   }) async {
     if (firebaseUser == null) return Future.error('User does not exist');
 
@@ -38,7 +38,7 @@ class FireChat {
       role: creatorRole.toShortString(),
     );
 
-    final roomUsers = [types.User.fromJson(currentUser)] + users;
+    final roomUsers = [mm.User.fromJson(currentUser)] + users;
 
     final room = await getFirebaseFirestore
         .collection(FireChatConst.roomsCollectionName)
@@ -47,7 +47,7 @@ class FireChat {
       'imageUrl': imageUrl,
       'metadata': metadata,
       'name': name,
-      'type': types.RoomType.group.toShortString(),
+      'type': mm.RoomType.group.toShortString(),
       'updatedAt': FieldValue.serverTimestamp(),
       'userIds': roomUsers.map((u) => u.id).toList(),
       'userRoles': roomUsers.fold<Map<String, String?>>(
@@ -59,20 +59,20 @@ class FireChat {
       ),
     });
 
-    return types.Room(
+    return mm.Room(
       id: room.id,
       imageUrl: imageUrl,
       metadata: metadata,
       name: name,
-      type: types.RoomType.group,
+      type: mm.RoomType.group,
       users: roomUsers,
     );
   }
 
   /// Creates a direct chat for 2 people. Add [metadata] for any additional
   /// custom data.
-  Future<types.Room> createRoom(
-    types.User otherUser, {
+  Future<mm.Room> createRoom(
+    mm.User otherUser, {
     Map<String, dynamic>? metadata,
   }) async {
     final fu = firebaseUser;
@@ -85,7 +85,7 @@ class FireChat {
 
     final roomQuery = await getFirebaseFirestore
         .collection(FireChatConst.roomsCollectionName)
-        .where('type', isEqualTo: types.RoomType.direct.toShortString())
+        .where('type', isEqualTo: mm.RoomType.direct.toShortString())
         .where('userIds', isEqualTo: userIds)
         .limit(1)
         .get();
@@ -107,7 +107,7 @@ class FireChat {
     // try to check the room by reversing user ids array.
     final oldRoomQuery = await getFirebaseFirestore
         .collection(FireChatConst.roomsCollectionName)
-        .where('type', isEqualTo: types.RoomType.direct.toShortString())
+        .where('type', isEqualTo: mm.RoomType.direct.toShortString())
         .where('userIds', isEqualTo: userIds.reversed.toList())
         .limit(1)
         .get();
@@ -131,7 +131,7 @@ class FireChat {
       FireChatConst.usersCollectionName,
     );
 
-    final users = [types.User.fromJson(currentUser), otherUser];
+    final users = [mm.User.fromJson(currentUser), otherUser];
 
     // Create new room with sorted user ids array.
     final room = await getFirebaseFirestore
@@ -141,23 +141,23 @@ class FireChat {
       'imageUrl': null,
       'metadata': metadata,
       'name': null,
-      'type': types.RoomType.direct.toShortString(),
+      'type': mm.RoomType.direct.toShortString(),
       'updatedAt': FieldValue.serverTimestamp(),
       'userIds': userIds,
       'userRoles': null,
     });
 
-    return types.Room(
+    return mm.Room(
       id: room.id,
       metadata: metadata,
-      type: types.RoomType.direct,
+      type: mm.RoomType.direct,
       users: users,
     );
   }
 
-  /// Creates [types.User] in Firebase to store name and avatar used on
+  /// Creates [mm.User] in Firebase to store name and avatar used on
   /// rooms list.
-  Future<void> createUserInFirestore(types.User user) async {
+  Future<void> createUserInFirestore(mm.User user) async {
     await getFirebaseFirestore
         .collection(FireChatConst.usersCollectionName)
         .doc(user.id)
@@ -189,7 +189,7 @@ class FireChat {
         .delete();
   }
 
-  /// Removes [types.User] from `users` collection in Firebase.
+  /// Removes [mm.User] from `users` collection in Firebase.
   Future<void> deleteUserFromFirestore(String userId) async {
     await getFirebaseFirestore
         .collection(FireChatConst.usersCollectionName)
@@ -200,8 +200,8 @@ class FireChat {
   /// Returns a stream of messages from Firebase for a given room.
   ////// Returns a stream of messages from Firebase for a given room.
   /// Now with enhanced reply support.
-  Stream<List<types.Message>> messages(
-    types.Room room, {
+  Stream<List<mm.Message>> messages(
+    mm.Room room, {
     List<Object?>? endAt,
     List<Object?>? endBefore,
     int? limit,
@@ -225,7 +225,7 @@ class FireChat {
             final data = doc.data();
             final author = room.users.firstWhere(
               (u) => u.id == data['authorId'],
-              orElse: () => types.User(id: data['authorId'] as String),
+              orElse: () => mm.User(id: data['authorId'] as String),
             );
 
             data['author'] = author.toJson();
@@ -239,7 +239,7 @@ class FireChat {
                 room.users.every((user) => seenBy.containsKey(user.id));
 
             // Create the message
-            final message = types.Message.fromJson(data).copyWith(
+            final message = mm.Message.fromJson(data).copyWith(
               metadata: {
                 ...data['metadata'] ?? {},
                 'seen': allUsersHaveSeen,
@@ -257,7 +257,7 @@ class FireChat {
   }
 
   /// Returns a stream of changes in a room from Firebase.
-  Stream<types.Room> room(String roomId) {
+  Stream<mm.Room> room(String roomId) {
     final fu = firebaseUser;
 
     if (fu == null) return const Stream.empty();
@@ -277,7 +277,7 @@ class FireChat {
   }
 
   /// get rooms data list
-  Stream<List<types.Room>> rooms({bool orderByUpdatedAt = false}) {
+  Stream<List<mm.Room>> rooms({bool orderByUpdatedAt = false}) {
     final fu = firebaseUser;
 
     if (fu == null) return const Stream.empty();
@@ -301,7 +301,7 @@ class FireChat {
         );
   }
 
-  Future<List<types.Room>> roomList({bool orderByUpdatedAt = false}) async {
+  Future<List<mm.Room>> roomList({bool orderByUpdatedAt = false}) async {
     final fu = firebaseUser;
 
     if (fu == null) return [];
@@ -325,10 +325,10 @@ class FireChat {
     );
   }
 
-  void sendMessageReply(types.Message partialMessage, String roomId) async {
+  void sendMessageReply(mm.Message partialMessage, String roomId) async {
     if (firebaseUser == null) return;
 
-    types.Message? message = partialMessage;
+    mm.Message? message = partialMessage;
 
     final messageMap = message.toJson();
     messageMap.removeWhere((key, value) => key == 'author' || key == 'id');
@@ -347,13 +347,13 @@ class FireChat {
 
     // Extract the text content of the message
     String lastMessageText = '';
-    if (message is types.TextMessage) {
+    if (message is mm.TextMessage) {
       lastMessageText = message.text;
-    } else if (message is types.ImageMessage) {
+    } else if (message is mm.ImageMessage) {
       lastMessageText = '📷 Image';
-    } else if (message is types.FileMessage) {
+    } else if (message is mm.FileMessage) {
       lastMessageText = '📄 File';
-    } else if (message is types.CustomMessage) {
+    } else if (message is mm.CustomMessage) {
       lastMessageText = 'Custom Message';
     }
 
@@ -372,29 +372,29 @@ class FireChat {
   void sendMessage(dynamic partialMessage, String roomId) async {
     if (firebaseUser == null) return;
 
-    types.Message? message;
+    mm.Message? message;
 
-    if (partialMessage is types.PartialCustom) {
-      message = types.CustomMessage.fromPartial(
-        author: types.User(id: firebaseUser!.uid),
+    if (partialMessage is mm.PartialCustom) {
+      message = mm.CustomMessage.fromPartial(
+        author: mm.User(id: firebaseUser!.uid),
         id: '',
         partialCustom: partialMessage,
       );
-    } else if (partialMessage is types.PartialFile) {
-      message = types.FileMessage.fromPartial(
-        author: types.User(id: firebaseUser!.uid),
+    } else if (partialMessage is mm.PartialFile) {
+      message = mm.FileMessage.fromPartial(
+        author: mm.User(id: firebaseUser!.uid),
         id: '',
         partialFile: partialMessage,
       );
-    } else if (partialMessage is types.PartialImage) {
-      message = types.ImageMessage.fromPartial(
-        author: types.User(id: firebaseUser!.uid),
+    } else if (partialMessage is mm.PartialImage) {
+      message = mm.ImageMessage.fromPartial(
+        author: mm.User(id: firebaseUser!.uid),
         id: '',
         partialImage: partialMessage,
       );
-    } else if (partialMessage is types.PartialText) {
-      message = types.TextMessage.fromPartial(
-        author: types.User(id: firebaseUser!.uid),
+    } else if (partialMessage is mm.PartialText) {
+      message = mm.TextMessage.fromPartial(
+        author: mm.User(id: firebaseUser!.uid),
         id: '',
         partialText: partialMessage,
       );
@@ -418,13 +418,13 @@ class FireChat {
 
       // Extract the text content of the message
       String lastMessageText = '';
-      if (message is types.TextMessage) {
+      if (message is mm.TextMessage) {
         lastMessageText = message.text;
-      } else if (message is types.ImageMessage) {
+      } else if (message is mm.ImageMessage) {
         lastMessageText = '📷 Image';
-      } else if (message is types.FileMessage) {
+      } else if (message is mm.FileMessage) {
         lastMessageText = '📄 File';
-      } else if (message is types.CustomMessage) {
+      } else if (message is mm.CustomMessage) {
         lastMessageText = 'Custom Message';
       }
 
@@ -440,7 +440,7 @@ class FireChat {
 
   /// Updates a message in the Firestore. Accepts any message and a
   /// room ID. Message will probably be taken from the [messages] stream.
-  void updateMessage(types.Message message, String roomId) async {
+  void updateMessage(mm.Message message, String roomId) async {
     if (firebaseUser == null) return;
     if (message.author.id != firebaseUser!.uid) return;
 
@@ -457,7 +457,7 @@ class FireChat {
         .update(messageMap);
   }
 
-  void updateRoom(types.Room room) async {
+  void updateRoom(mm.Room room) async {
     if (firebaseUser == null) return;
 
     final roomMap = room.toJson();
@@ -467,7 +467,7 @@ class FireChat {
         key == 'lastMessages' ||
         key == 'users');
 
-    if (room.type == types.RoomType.direct) {
+    if (room.type == mm.RoomType.direct) {
       roomMap['imageUrl'] = null;
       roomMap['name'] = null;
     }
@@ -494,29 +494,61 @@ class FireChat {
         .update(roomMap);
   }
 
-  /// Returns a stream of all users from Firebase.
-  Stream<List<types.User>> users() {
-    if (firebaseUser == null) return const Stream.empty();
-    return getFirebaseFirestore
+  Future<mm.User?> getUserById(String id) async {
+    final doc = await getFirebaseFirestore
         .collection(FireChatConst.usersCollectionName)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs.fold<List<types.User>>(
-            [],
-            (previousValue, doc) {
-              if (firebaseUser!.uid == doc.id) return previousValue;
+        .doc(id)
+        .get();
 
-              final data = doc.data();
+    if (!doc.exists) return null;
 
-              data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
-              data['id'] = doc.id;
-              data['lastSeen'] = data['lastSeen']?.millisecondsSinceEpoch;
-              data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+    final data = doc.data();
+    if (data == null) return null;
 
-              return [...previousValue, types.User.fromJson(data)];
-            },
-          ),
-        );
+    data['id'] = doc.id;
+    data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+    data['lastSeen'] = data['lastSeen']?.millisecondsSinceEpoch;
+    data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+
+    return mm.User.fromJson(data);
+  }
+
+  void setOnline(bool online) {
+    
+    if (firebaseUser == null) return;
+
+    getFirebaseFirestore.collection('users').doc(firebaseUser?.uid).update({
+      'isOnline': online,
+      'lastSeen': FieldValue.serverTimestamp(),
+    });
+
+  }
+
+  Future<List<mm.User>> searchUsersByFullName(String query) async {
+    if (firebaseUser == null) return [];
+
+    final snapshot = await getFirebaseFirestore
+        .collection(FireChatConst.usersCollectionName)
+        .get();
+
+    final users = snapshot.docs.fold<List<mm.User>>([], (previousValue, doc) {
+      if (firebaseUser!.uid == doc.id) return previousValue;
+
+      final data = doc.data();
+
+      data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+      data['id'] = doc.id;
+      data['lastSeen'] = data['lastSeen']?.millisecondsSinceEpoch;
+      data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+
+      final user = mm.User.fromJson(data);
+      if (user.fullName.toLowerCase().contains(query.toLowerCase())) {
+        return [...previousValue, user];
+      }
+      return previousValue;
+    });
+
+    return users;
   }
 
   /// Marks a message as seen if not already.
@@ -562,7 +594,7 @@ class FireChat {
   }
 
   /// Checks if the recipient has seen the message.
-  bool isMessageSeen(types.Message message) {
+  bool isMessageSeen(mm.Message message) {
     final isSeen = message.metadata?['seen'] == true;
     return isSeen;
   }
@@ -594,18 +626,18 @@ class FireChat {
   /// Accepts the original message being replied to, the partial reply message,
   /// and the room ID.
   Future<void> sendReply({
-    required types.Message originalMessage,
+    required mm.Message originalMessage,
     required dynamic partialReply,
     required String roomId,
   }) async {
     if (firebaseUser == null) return;
 
     // Create the reply message with reference to the original
-    types.Message? replyMessage;
+    mm.Message? replyMessage;
 
-    if (partialReply is types.PartialText) {
-      replyMessage = types.TextMessage.fromPartial(
-        author: types.User(id: firebaseUser!.uid),
+    if (partialReply is mm.PartialText) {
+      replyMessage = mm.TextMessage.fromPartial(
+        author: mm.User(id: firebaseUser!.uid),
         id: '',
         partialText: partialReply,
       ).copyWith(
@@ -615,9 +647,9 @@ class FireChat {
           // 'replyTo': originalMessage.toJson(),
         },
       );
-    } else if (partialReply is types.PartialImage) {
-      replyMessage = types.ImageMessage.fromPartial(
-        author: types.User(id: firebaseUser!.uid),
+    } else if (partialReply is mm.PartialImage) {
+      replyMessage = mm.ImageMessage.fromPartial(
+        author: mm.User(id: firebaseUser!.uid),
         id: '',
         partialImage: partialReply,
       ).copyWith(
@@ -626,9 +658,9 @@ class FireChat {
           ...partialReply.metadata ?? {},
         },
       );
-    } else if (partialReply is types.PartialFile) {
-      replyMessage = types.FileMessage.fromPartial(
-        author: types.User(id: firebaseUser!.uid),
+    } else if (partialReply is mm.PartialFile) {
+      replyMessage = mm.FileMessage.fromPartial(
+        author: mm.User(id: firebaseUser!.uid),
         id: '',
         partialFile: partialReply,
       ).copyWith(
@@ -637,9 +669,9 @@ class FireChat {
           ...partialReply.metadata ?? {},
         },
       );
-    } else if (partialReply is types.PartialCustom) {
-      replyMessage = types.CustomMessage.fromPartial(
-        author: types.User(id: firebaseUser!.uid),
+    } else if (partialReply is mm.PartialCustom) {
+      replyMessage = mm.CustomMessage.fromPartial(
+        author: mm.User(id: firebaseUser!.uid),
         id: '',
         partialCustom: partialReply,
       ).copyWith(
@@ -658,9 +690,9 @@ class FireChat {
     }
   }
 
-  types.Message _processReplyMetadata(
-    types.Message message,
-    types.Room room,
+  mm.Message _processReplyMetadata(
+    mm.Message message,
+    mm.Room room,
   ) {
     // If message has a replied message, ensure its author is properly set from room users
     if (message.repliedMessage != null) {
@@ -745,7 +777,7 @@ class FireChat {
   }
 
   /// Returns a stream of the last message in a room, checking if it's deleted
-  Stream<types.Message?> lastMessageStream(String roomId) {
+  Stream<mm.Message?> lastMessageStream(String roomId) {
     return getFirebaseFirestore
         .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
         .orderBy('createdAt', descending: true)
@@ -777,7 +809,7 @@ class FireChat {
 
       final author = room.users.firstWhere(
         (u) => u.id == data['authorId'],
-        orElse: () => types.User(id: data['authorId'] as String),
+        orElse: () => mm.User(id: data['authorId'] as String),
       );
 
       data['author'] = author.toJson();
@@ -786,7 +818,7 @@ class FireChat {
       data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
       data['isDeleted'] = data['isDeleted'];
 
-      return types.Message.fromJson(data);
+      return mm.Message.fromJson(data);
     });
   }
 }

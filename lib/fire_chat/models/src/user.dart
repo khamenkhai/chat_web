@@ -22,6 +22,7 @@ abstract class User extends Equatable {
     this.metadata,
     this.role,
     this.updatedAt,
+    this.isOnline, // ✅ New field
   });
 
   const factory User({
@@ -34,6 +35,7 @@ abstract class User extends Equatable {
     Map<String, dynamic>? metadata,
     Role? role,
     int? updatedAt,
+    bool? isOnline, // ✅ New field
   }) = _User;
 
   /// Creates user from a map (decoded JSON).
@@ -66,6 +68,9 @@ abstract class User extends Equatable {
   /// Updated user timestamp, in ms.
   final int? updatedAt;
 
+  /// Whether user is currently online.
+  final bool? isOnline; // ✅ New field
+
   /// Equatable props.
   @override
   List<Object?> get props => [
@@ -78,6 +83,7 @@ abstract class User extends Equatable {
         metadata,
         role,
         updatedAt,
+        isOnline, // ✅ New prop
       ];
 
   User copyWith({
@@ -90,10 +96,14 @@ abstract class User extends Equatable {
     Map<String, dynamic>? metadata,
     Role? role,
     int? updatedAt,
+    bool? isOnline, // ✅ New param
   });
 
   /// Converts user to the map representation, encodable to JSON.
   Map<String, dynamic> toJson() => _$UserToJson(this);
+
+  /// Full name combining first and last name.
+  String get fullName => '${firstName ?? ''} ${lastName ?? ''}'.trim();
 }
 
 /// A utility class to enable better copyWith.
@@ -108,6 +118,7 @@ class _User extends User {
     super.metadata,
     super.role,
     super.updatedAt,
+    super.isOnline, // ✅ New field
   }) : super._();
 
   @override
@@ -121,6 +132,7 @@ class _User extends User {
     dynamic metadata = _Unset,
     dynamic role = _Unset,
     dynamic updatedAt = _Unset,
+    dynamic isOnline = _Unset, // ✅ New param
   }) =>
       _User(
         createdAt: createdAt == _Unset ? this.createdAt : createdAt as int?,
@@ -134,6 +146,7 @@ class _User extends User {
             : metadata as Map<String, dynamic>?,
         role: role == _Unset ? this.role : role as Role?,
         updatedAt: updatedAt == _Unset ? this.updatedAt : updatedAt as int?,
+        isOnline: isOnline == _Unset ? this.isOnline : isOnline as bool?, // ✅ New copyWith logic
       );
 }
 

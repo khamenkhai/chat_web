@@ -1,13 +1,12 @@
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 import 'package:chat_web/view/chat/widgets/file_message_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 import 'package:iconly/iconly.dart';
-import 'package:photo_view/photo_view.dart';
 
 class MessageBubble extends StatelessWidget {
   final types.Message message;
@@ -29,181 +28,125 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final messageColors = Theme.of(context).extension<MessageColors>()!;
+    if (message.isDeleted ?? false) {
+      return _buildDeletedMessage(context);
+    }
+    return _buildMessageBubble(context);
+  }
+
+  Widget _buildDeletedMessage(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = context.colorScheme;
-    final isEdited = message.isEdited ?? false;
-    final isDeleted = message.isDeleted ?? false;
+    return Padding(
+      padding: _messagePadding,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!isMe) _buildUserAvatar(context),
+          _buildDeletedBox(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(BuildContext context) {
+    final theme = Theme.of(context);
+    final messageColors = theme.extension<MessageColors>()!;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: isDeleted
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment:
-                  isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      padding: _messagePadding,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!isMe) _buildUserAvatar(context),
+          GestureDetector(
+            onTap: () => _handleMessageTap(context),
+            onLongPress: onLongPress,
+            child: Row(
               children: [
-                if (!isMe) // Show avatar only for other users
-                  _userAvatar(colorScheme, theme),
-                _deletedBox(theme),
-              ],
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment:
-                  isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-              children: [
-                if (!isMe) // Show avatar only for other users
-                  _userAvatar(colorScheme, theme),
-
-                /// Message box
-                GestureDetector(
-                  onTap: () {
-                    // Web-specific download/open logic
-                    if (message is types.FileMessage) {
-                      _downloadFile(message as types.FileMessage, context);
-                    } else if (message is types.ImageMessage) {
-                      debugPrint((message as types.ImageMessage).uri);
-                    }
-                  },
-                  onLongPress: onLongPress,
-                  child: Row(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: isMe
-                              ? messageColors.current.withValues(alpha: 0.2)
-                              : messageColors.otherColor,
-                          borderRadius: _bubbleBorderRadius(),
-                        ),
-                        child: IntrinsicWidth(
-                          child: Column(
-                            crossAxisAlignment: isMe
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (!isMe) _buildSenderName(theme),
-                              if (message.repliedMessage != null)
-                                _buildReplyWidget(
-                                  theme,
-                                  message.repliedMessage!,
-                                  isMe,
-                                  messageColors,
-                                ),
-                              message is types.FileMessage
-                                  ? Container()
-                                  : const SizedBox(height: 5),
-                              _buildMessageContent(theme, colorScheme, context),
-                              _buildMessageStatus(theme, context, isEdited),
-                              const SizedBox(height: 5),
-                            ],
-                          ),
-                        ),
-                      ),
-                      !isMe
-                          ? Center(
-                              child: Material(
-                                color: context.onPrimary,
-                                borderRadius: BorderRadius.circular(100),
-                                shadowColor: Colors.red,
-                                child: InkWell(
-                                  onTap: () {},
-                                  child: Container(
-                                    padding: EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      IconlyLight.heart,
-                                      size: 15,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Container()
-                    ],
-                  ),
-                ),
+                _buildMessageContentContainer(messageColors, theme,context),
+                if (!isMe) _buildLikeButton(context),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _deletedBox(ThemeData theme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        isMe
-            ? Container(
-                margin: EdgeInsets.only(right: 10),
-                child: Text(
-                  _formatTime(message.createdAt ?? 0),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              )
-            : Container(),
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.do_not_disturb_on_rounded,
-                size: 18,
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "Message Deleted",
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color:
-                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  fontStyle: FontStyle.italic,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
+  Widget _buildMessageContentContainer(MessageColors messageColors, ThemeData theme,BuildContext context){
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: isMe 
+            ? messageColors.current.withValues(alpha: 0.2)
+            : messageColors.otherColor,
+        borderRadius: _bubbleBorderRadius(),
+      ),
+      child: IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isMe) _buildSenderName(theme),
+            if (message.repliedMessage != null)
+              _buildReplyWidget(theme, message.repliedMessage!),
+            if (message is! types.FileMessage) const SizedBox(height: 5),
+            _buildMessageContent(theme),
+            _buildMessageStatus(theme, context),
+            const SizedBox(height: 5),
+          ],
         ),
-        !isMe
-            ? Container(
-                margin: EdgeInsets.only(left: 10),
-                child: Text(
-                  _formatTime(message.createdAt ?? 0),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              )
-            : Container(),
-      ],
+      ),
     );
   }
 
-  void _downloadFile(
-    types.FileMessage fileMessage,
-    BuildContext context,
-  ) async {
+  Widget _buildDeletedBox(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.do_not_disturb_on_rounded,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            "Message Deleted".tr(),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              fontStyle: FontStyle.italic,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleMessageTap(BuildContext context) {
+    if (message is types.FileMessage) {
+      _downloadFile(message as types.FileMessage, context);
+    }
+    onTap();
+  }
+
+  void _downloadFile(types.FileMessage fileMessage, BuildContext context) async {
     try {
-      // Show a loading indicator or snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Downloading ${fileMessage.name}...'),
@@ -211,19 +154,14 @@ class MessageBubble extends StatelessWidget {
         ),
       );
 
-      // Create a hidden anchor element
       final anchor = html.AnchorElement(href: fileMessage.uri)
         ..target = '_blank'
         ..download = fileMessage.name
         ..rel = 'noopener noreferrer';
 
-      // Add to DOM, trigger click, then remove
       html.document.body?.append(anchor);
       anchor.click();
       anchor.remove();
-
-      // Optional: Track successful download initiation
-      debugPrint('Download initiated for: ${fileMessage.name}');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -231,20 +169,13 @@ class MessageBubble extends StatelessWidget {
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
-      debugPrint('File download error: $e');
     }
   }
 
-  BorderRadius _bubbleBorderRadius() {
-    return BorderRadius.only(
-      bottomLeft: const Radius.circular(16),
-      bottomRight: const Radius.circular(16),
-      topLeft: Radius.circular(isMe ? 16 : 4),
-      topRight: Radius.circular(isMe ? 4 : 16),
-    );
-  }
+  Widget _buildUserAvatar(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-  Padding _userAvatar(ColorScheme colorScheme, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: CircleAvatar(
@@ -267,22 +198,33 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildReplyWidget(
-    ThemeData theme,
-    types.Message repliedMessage,
-    bool isCurrentUser,
-    MessageColors messageColors,
-  ) {
+  Widget _buildLikeButton(BuildContext context) {
+    return Center(
+      child: Material(
+        color: context.onPrimary,
+        borderRadius: BorderRadius.circular(100),
+        child: InkWell(
+          onTap: () {},
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            child: const Icon(IconlyLight.heart, size: 15),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplyWidget(ThemeData theme, types.Message repliedMessage) {
+    final messageColors = theme.extension<MessageColors>()!;
     final isReplyFromMe = repliedMessage.author.id == message.author.id;
 
     return Container(
-      margin: EdgeInsets.all(0),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: messageColors.replyColor,
+        color: isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
         borderRadius: BorderRadius.only(
-          topRight: isMe ? Radius.circular(8) : Radius.zero,
-          topLeft: isMe ? Radius.circular(8) : Radius.zero,
+          topRight: isMe ? const Radius.circular(8) : Radius.zero,
+          topLeft: isMe ? const Radius.circular(8) : Radius.zero,
         ),
       ),
       child: Column(
@@ -290,16 +232,10 @@ class MessageBubble extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.subdirectory_arrow_right,
-                size: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              const Icon(Icons.subdirectory_arrow_right, size: 12),
               const SizedBox(width: 10),
               Text(
-                isReplyFromMe
-                    ? 'yourself'
-                    : repliedMessage.author.firstName ?? 'User',
+                isReplyFromMe ? 'yourself' : repliedMessage.author.firstName ?? 'User',
                 style: theme.textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -324,44 +260,35 @@ class MessageBubble extends StatelessWidget {
         ),
       );
     } else if (message is types.ImageMessage) {
-      return Row(
+      return const Row(
         children: [
-          const Icon(IconlyLight.image, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            'Photo',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontStyle: FontStyle.italic,
-            ),
-          ),
+          Icon(IconlyLight.image, size: 16),
+          SizedBox(width: 4),
+          Text('Photo'),
         ],
       );
     } else if (message is types.FileMessage) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.insert_drive_file, size: 16),
-          const SizedBox(width: 4),
-          SizedBox(
-            width: (message.name.length.toDouble() * 2.5),
-            child: Text(
+      return SizedBox(
+        width: 100,
+        child: Row(
+          children: [
+            const Icon(Icons.insert_drive_file, size: 16),
+            const SizedBox(width: 4),
+            Text(
               message.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontStyle: FontStyle.italic,
-              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
     return const SizedBox.shrink();
   }
 
   Widget _buildSenderName(ThemeData theme) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Text(
         message.author.firstName ?? 'Unknown',
         style: theme.textTheme.labelLarge?.copyWith(
@@ -372,131 +299,94 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContent(
-    ThemeData theme,
-    ColorScheme colorScheme,
-    BuildContext context,
-  ) {
+  Widget _buildMessageContent(ThemeData theme) {
     if (message is types.TextMessage) {
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 10),
-        child: Text(
-          (message as types.TextMessage).text,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: colorScheme.onSurface,
-            // color: isMe ? colorScheme.onPrimary : colorScheme.onSurface,
-            fontSize: 14,
-          ),
-        ),
-      );
+      return _buildTextMessage(theme);
     } else if (message is types.ImageMessage) {
-      return GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Scaffold(
-                backgroundColor: Colors.black,
-                appBar: AppBar(
-                  backgroundColor: Colors.black,
-                  leading: IconButton(
-                    icon: Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-                body: Center(
-                  child: PhotoView(
-                    imageProvider: NetworkImage(
-                      (message as types.ImageMessage).uri,
-                    ),
-                    minScale: PhotoViewComputedScale.contained,
-                    maxScale: PhotoViewComputedScale.covered * 2,
-                    initialScale: PhotoViewComputedScale.contained,
-                    heroAttributes: PhotoViewHeroAttributes(
-                      tag: (message as types.ImageMessage).uri,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-        child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 5),
-          child: ClipRRect(
-            borderRadius: BorderRadius.only(
-              bottomLeft: const Radius.circular(16),
-              bottomRight: const Radius.circular(16),
-              topLeft: Radius.circular(isMe ? 16 : 4),
-              topRight: Radius.circular(isMe ? 4 : 16),
-            ),
-            child: Hero(
-              tag: (message as types.ImageMessage).uri,
-              child: Image.network(
-                (message as types.ImageMessage).uri,
-                width: 220,
-                height: 220,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return SizedBox(
-                    width: 220,
-                    height: 220,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        value: progress.expectedTotalBytes != null
-                            ? progress.cumulativeBytesLoaded /
-                                progress.expectedTotalBytes!
-                            : null,
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 220,
-                    height: 220,
-                    color: colorScheme.surfaceContainerHighest,
-                    child: Center(
-                      child: Icon(
-                        IconlyLight.image,
-                        size: 48,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      );
+      return _buildImageMessage(theme);
     } else if (message is types.FileMessage) {
       return FileMessageTile(message: message as types.FileMessage);
     }
     return const Text('Unsupported message type');
   }
 
-  Widget _buildMessageStatus(
-      ThemeData theme, BuildContext context, bool isEdited) {
-    final isSeen = message.metadata?['seen'] == true;
+  Widget _buildTextMessage(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Text(
+        (message as types.TextMessage).text,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: theme.colorScheme.onSurface,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageMessage(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 5),
+      child: ClipRRect(
+        borderRadius: _bubbleBorderRadius(),
+        child: Image.network(
+          (message as types.ImageMessage).uri,
+          width: 220,
+          height: 220,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return _buildImageLoadingIndicator(progress);
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return _buildImageErrorPlaceholder(colorScheme);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageLoadingIndicator(ImageChunkEvent progress) {
+    return SizedBox(
+      width: 220,
+      height: 220,
+      child: Center(
+        child: CircularProgressIndicator(
+          value: progress.expectedTotalBytes != null
+              ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageErrorPlaceholder(ColorScheme colorScheme) {
+    return Container(
+      width: 220,
+      height: 220,
+      color: colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          IconlyLight.image,
+          size: 48,
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageStatus(ThemeData theme, BuildContext context) {
+    final isEdited = message.isEdited ?? false;
+    final isSeen = message.metadata?['seen'] == true;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          isEdited
-              ? Container(
-                  margin: EdgeInsets.only(right: 8),
-                  child: Text(
-                    "Edited",
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                )
-              : Container(),
+          if (isEdited) _buildEditedLabel(theme),
           Text(
             _formatTime(message.createdAt ?? 0),
             style: theme.textTheme.labelSmall?.copyWith(
@@ -504,16 +394,38 @@ class MessageBubble extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          if (isMe)
-            Icon(
-              isSeen ? Icons.done_all : Icons.done,
-              size: 16,
-              color: isSeen
-                  ? context.primaryColor
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
+          if (isMe) _buildMessageStatusIcon(context, isSeen),
         ],
       ),
+    );
+  }
+
+  Widget _buildEditedLabel(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Text(
+        "Edited",
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageStatusIcon(BuildContext context, bool isSeen) {
+    return Icon(
+      isSeen ? Icons.done_all : Icons.done,
+      size: 16,
+      color: isSeen ? context.primaryColor : Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+  }
+
+  BorderRadius _bubbleBorderRadius() {
+    return BorderRadius.only(
+      bottomLeft: const Radius.circular(16),
+      bottomRight: const Radius.circular(16),
+      topLeft: Radius.circular(isMe ? 16 : 4),
+      topRight: Radius.circular(isMe ? 4 : 16),
     );
   }
 
@@ -521,4 +433,6 @@ class MessageBubble extends StatelessWidget {
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
     return DateFormat('hh:mm a').format(date);
   }
+
+  static const EdgeInsets _messagePadding = EdgeInsets.symmetric(horizontal: 8, vertical: 2);
 }

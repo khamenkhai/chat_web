@@ -21,7 +21,8 @@ class RoomsPage extends ConsumerStatefulWidget {
   ConsumerState<RoomsPage> createState() => _RoomsPageState();
 }
 
-class _RoomsPageState extends ConsumerState<RoomsPage> {
+class _RoomsPageState extends ConsumerState<RoomsPage>
+    with WidgetsBindingObserver {
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
   }
@@ -57,6 +58,32 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
             : null,
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setOnline(true); // Don't update lastSeen here
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      setOnline(false); // lastSeen will be updated in here
+    }
+  }
+
+  void setOnline(bool online) {
+    FireChat.instance.setOnline(online);
   }
 
   @override

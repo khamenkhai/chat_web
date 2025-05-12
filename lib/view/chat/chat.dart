@@ -9,15 +9,18 @@ import 'package:chat_web/view/chat/widgets/message_input.dart';
 import 'package:chat_web/view/chat/widgets/message_options_dialog.dart';
 import 'package:chat_web/view/theme/theme_switch.dart';
 import 'package:chat_web/view/utils/util.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:timeago/timeago.dart' as timeago;
 import 'package:path_provider/path_provider.dart';
 
 // Provider for tracking attachment upload state
-final attachmentUploadingProvider = StateProvider.autoDispose<bool>((ref) => false);
+final attachmentUploadingProvider =
+    StateProvider.autoDispose<bool>((ref) => false);
 
 // Provider for managing reply message state
 final replyMessageProvider = StateProvider<types.Message?>((ref) => null);
@@ -73,7 +76,6 @@ class ChatPage extends StatelessWidget {
     // Watch for room data changes
     return Consumer(
       builder: (context, ref, _) {
-
         final room = ref.read(selectedRoomProvider.notifier).state;
 
         return Scaffold(
@@ -84,9 +86,17 @@ class ChatPage extends StatelessWidget {
               minVerticalPadding: 1,
               leading: _buildAvatar(room!),
               title: Text(room.name ?? ""),
-              subtitle: Text(
-                "Last seen today at 5:30 PM",
-                style: TextStyle(fontSize: 12, height: 0),
+              subtitle: FutureBuilder(
+                future: FireChat.instance.getUserById(room.users
+                    .firstWhere(
+                        (e) => e.id != FirebaseAuth.instance.currentUser?.uid)
+                    .id),
+                builder: (context, snapshot) {
+                  return Text(
+                    formatLastSeen(snapshot.data?.lastSeen),
+                    style: TextStyle(fontSize: 12, height: 0),
+                  );
+                },
               ),
             ),
             leadingWidth: 0,
@@ -99,6 +109,31 @@ class ChatPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  String formatLastSeen(int? lastSeen) {
+  if (lastSeen == null) return "Last seen: unknown";
+
+  try {
+    final lastSeenDate = DateTime.fromMillisecondsSinceEpoch(lastSeen);
+    final formattedTime = DateFormat.jm().format(lastSeenDate); // e.g., 5:20 PM
+    final timeAgo = timeago.format(lastSeenDate); // e.g., 5 minutes ago
+    return "Last seen $timeAgo at $formattedTime";
+  } catch (e) {
+    return "Last seen: invalid date";
+  }
+}
+
+  String formatTime(int? dateTime) {
+    try {
+      final formattedTime = DateFormat.jm().format(
+        DateTime.fromMillisecondsSinceEpoch(dateTime ?? 0),
+      );
+
+      return formattedTime;
+    } catch (e) {
+      return "Invalid time!";
+    }
   }
 }
 
@@ -129,7 +164,6 @@ class _ChatContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     debugPrint("=> chat content rebuilds!");
 
     return Consumer(
@@ -192,7 +226,7 @@ class _ChatContent extends StatelessWidget {
                   const LinearProgressIndicator(minHeight: 2),
                 MessageInput(
                   onSend: (text) {
-
+                    
                     final reply = ref.read(replyMessageProvider);
 
                     if (reply != null) {

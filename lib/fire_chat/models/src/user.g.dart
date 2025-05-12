@@ -16,6 +16,7 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       metadata: json['metadata'] as Map<String, dynamic>?,
       role: $enumDecodeNullable(_$RoleEnumMap, json['role']),
       updatedAt: (json['updatedAt'] as num?)?.toInt(),
+      isOnline: (json['isOnline'] as bool?)?? false,
     );
 
 Map<String, dynamic> _$UserToJson(User instance) {
@@ -36,6 +37,7 @@ Map<String, dynamic> _$UserToJson(User instance) {
   writeNotNull('metadata', instance.metadata);
   writeNotNull('role', _$RoleEnumMap[instance.role]);
   writeNotNull('updatedAt', instance.updatedAt);
+  writeNotNull('isOnline', instance.isOnline);
   return val;
 }
 
