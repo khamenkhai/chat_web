@@ -44,7 +44,7 @@ abstract class CustomMessage extends Message {
     int? updatedAt,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) = _CustomMessage;
 
   /// Creates a custom message from a map (decoded JSON).
@@ -64,7 +64,7 @@ abstract class CustomMessage extends Message {
     int? updatedAt,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) =>
       _CustomMessage(
         author: author,
@@ -115,7 +115,7 @@ abstract class CustomMessage extends Message {
     int? updatedAt,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   });
 
   /// Converts a custom message to the map representation,
@@ -179,7 +179,7 @@ class _CustomMessage extends CustomMessage {
         isDeleted: isDeleted == _Unset ? this.isDeleted : isDeleted as bool?,
         reactions: reactions == _Unset
             ? this.reactions
-            : reactions as Map<String, List<String>>?,
+            : reactions as Map<String, String>?,
       );
 }
 

@@ -55,7 +55,7 @@ abstract class AudioMessage extends Message {
     List<double>? waveForm,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) = _AudioMessage;
 
   /// Creates an audio message from a map (decoded JSON).
@@ -75,7 +75,7 @@ abstract class AudioMessage extends Message {
     int? updatedAt,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) =>
       _AudioMessage(
         author: author,
@@ -162,7 +162,7 @@ abstract class AudioMessage extends Message {
     List<double>? waveForm,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   });
 
   /// Converts an audio message to the map representation, encodable to JSON.
@@ -244,7 +244,7 @@ class _AudioMessage extends AudioMessage {
         isDeleted: isDeleted == _Unset ? this.isDeleted : isDeleted as bool?,
         reactions: reactions == _Unset
             ? this.reactions
-            : reactions as Map<String, List<String>>?,
+            : reactions as Map<String, String>?,
       );
 }
 

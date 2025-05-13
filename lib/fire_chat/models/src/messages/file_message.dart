@@ -53,7 +53,7 @@ abstract class FileMessage extends Message {
     required String uri,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) = _FileMessage;
 
   /// Creates a file message from a map (decoded JSON).
@@ -74,7 +74,7 @@ abstract class FileMessage extends Message {
     int? updatedAt,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) =>
       _FileMessage(
         author: author,
@@ -155,7 +155,7 @@ abstract class FileMessage extends Message {
     String? uri,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   });
 
   /// Converts a file message to the map representation, encodable to JSON.
@@ -235,7 +235,7 @@ class _FileMessage extends FileMessage {
         isDeleted: isDeleted == _Unset ? this.isDeleted : isDeleted as bool?,
         reactions: reactions == _Unset
             ? this.reactions
-            : reactions as Map<String, List<String>>?,
+            : reactions as Map<String, String>?,
       );
 }
 

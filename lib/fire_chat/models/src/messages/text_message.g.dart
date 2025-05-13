@@ -27,9 +27,12 @@ TextMessage _$TextMessageFromJson(Map<String, dynamic> json) => TextMessage(
       isEdited: json['isEdited'] as bool?,
       isDeleted: json['isDeleted'] as bool?,
       reactions: (json['reactions'] as Map<String, dynamic>?)?.map(
-        (k, e) =>
-            MapEntry(k, (e as List<dynamic>).map((e) => e as String).toList()),
+        (k, v) => MapEntry(k, v as String),
       ),
+      // reactions: (json['reactions'] as Map<String, dynamic>?)?.map(
+      //   (k, e) =>
+      //       MapEntry(k, (e as List<dynamic>).map((e) => e as String).toList()),
+      // ),
     );
 
 Map<String, dynamic> _$TextMessageToJson(TextMessage instance) {

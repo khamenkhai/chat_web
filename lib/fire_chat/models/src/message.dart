@@ -116,7 +116,7 @@ abstract class Message extends Equatable {
 
   /// Reactions to the message.
   /// Map where key is emoji and value is list of user IDs who reacted with that emoji.
-  final Map<String, List<String>>? reactions;
+  final Map<String, String>? reactions;
 
   /// Creates a copy of the message with an updated data.
   Message copyWith({
@@ -132,7 +132,7 @@ abstract class Message extends Equatable {
     int? updatedAt,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   });
 
   /// Converts a particular message to the map representation, serializable to JSON.

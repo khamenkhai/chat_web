@@ -23,41 +23,10 @@ class RoomsPage extends ConsumerStatefulWidget {
 
 class _RoomsPageState extends ConsumerState<RoomsPage>
     with WidgetsBindingObserver {
+      
   Future<void> _logout() async {
+    setOnline(false);
     await FirebaseAuth.instance.signOut();
-  }
-
-  Widget _buildAvatar(types.Room room) {
-    var color = Colors.transparent;
-
-    if (room.type == types.RoomType.direct) {
-      try {
-        final otherUser = room.users
-            .firstWhere((u) => u.id != FirebaseAuth.instance.currentUser?.uid);
-
-        color = getUserAvatarNameColor(otherUser);
-      } catch (e) {
-        // Do nothing if other user is not found.
-      }
-    }
-
-    final hasImage = room.imageUrl != null;
-    final name = room.name ?? '';
-
-    return Container(
-      margin: const EdgeInsets.only(right: 16),
-      child: CircleAvatar(
-        backgroundColor: hasImage ? Colors.transparent : color,
-        backgroundImage: hasImage ? NetworkImage(room.imageUrl!) : null,
-        radius: 20,
-        child: !hasImage
-            ? Text(
-                name.isEmpty ? '' : name[0].toUpperCase(),
-                style: const TextStyle(color: Colors.white),
-              )
-            : null,
-      ),
-    );
   }
 
   @override
@@ -366,5 +335,38 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     } else {
       context.go("/chat/${room.id}", extra: room.id);
     }
+  }
+
+  Widget _buildAvatar(types.Room room) {
+    var color = Colors.transparent;
+
+    if (room.type == types.RoomType.direct) {
+      try {
+        final otherUser = room.users
+            .firstWhere((u) => u.id != FirebaseAuth.instance.currentUser?.uid);
+
+        color = getUserAvatarNameColor(otherUser);
+      } catch (e) {
+        // Do nothing if other user is not found.
+      }
+    }
+
+    final hasImage = room.imageUrl != null;
+    final name = room.name ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(right: 16),
+      child: CircleAvatar(
+        backgroundColor: hasImage ? Colors.transparent : color,
+        backgroundImage: hasImage ? NetworkImage(room.imageUrl!) : null,
+        radius: 20,
+        child: !hasImage
+            ? Text(
+                name.isEmpty ? '' : name[0].toUpperCase(),
+                style: const TextStyle(color: Colors.white),
+              )
+            : null,
+      ),
+    );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
+import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 import 'package:chat_web/fire_chat/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/edit_message_dialog.dart';
@@ -92,8 +93,11 @@ class ChatPage extends StatelessWidget {
                         (e) => e.id != FirebaseAuth.instance.currentUser?.uid)
                     .id),
                 builder: (context, snapshot) {
+                  final bool isOnline = snapshot.data?.isOnline ?? false;
                   return Text(
-                    formatLastSeen(snapshot.data?.lastSeen),
+                    isOnline
+                        ? "Active Now"
+                        : formatLastSeen(snapshot.data?.lastSeen),
                     style: TextStyle(fontSize: 12, height: 0),
                   );
                 },
@@ -112,17 +116,18 @@ class ChatPage extends StatelessWidget {
   }
 
   String formatLastSeen(int? lastSeen) {
-  if (lastSeen == null) return "Last seen: unknown";
+    if (lastSeen == null) return "Last seen: unknown";
 
-  try {
-    final lastSeenDate = DateTime.fromMillisecondsSinceEpoch(lastSeen);
-    final formattedTime = DateFormat.jm().format(lastSeenDate); // e.g., 5:20 PM
-    final timeAgo = timeago.format(lastSeenDate); // e.g., 5 minutes ago
-    return "Last seen $timeAgo at $formattedTime";
-  } catch (e) {
-    return "Last seen: invalid date";
+    try {
+      final lastSeenDate = DateTime.fromMillisecondsSinceEpoch(lastSeen);
+      final formattedTime =
+          DateFormat.jm().format(lastSeenDate); // e.g., 5:20 PM
+      final timeAgo = timeago.format(lastSeenDate); // e.g., 5 minutes ago
+      return "Last seen $timeAgo at $formattedTime";
+    } catch (e) {
+      return "Last seen: invalid date";
+    }
   }
-}
 
   String formatTime(int? dateTime) {
     try {
@@ -221,12 +226,11 @@ class _ChatContent extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (replyTo != null) _replyToWidget(replyTo, ref),
+                if (replyTo != null) _replyToWidget(replyTo, ref,context),
                 if (isAttachmentUploading)
                   const LinearProgressIndicator(minHeight: 2),
                 MessageInput(
                   onSend: (text) {
-                    
                     final reply = ref.read(replyMessageProvider);
 
                     if (reply != null) {
@@ -313,9 +317,14 @@ class _ChatContent extends StatelessWidget {
   }
 
   /// Reply to widget
-  Container _replyToWidget(types.Message replyTo, WidgetRef ref) {
+  Container _replyToWidget(
+    types.Message replyTo,
+    WidgetRef ref,
+    BuildContext context,
+  ) {
+    final messageColors = Theme.of(context).extension<MessageColors>()!;
     return Container(
-      color: Colors.grey[200],
+      color: messageColors.otherReplyColor,
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 8,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconly/iconly.dart';
 import '../utils/util.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
@@ -125,7 +126,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.group_off_rounded,
+                          IconlyBold.user_2,
                           size: 48,
                           color: isDark ? Colors.grey[600] : Colors.grey[400],
                         ),
@@ -151,7 +152,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     height: 1,
                     thickness: 1,
                     color: isDark
-                        ? Colors.grey[800]!.withOpacity(0.5)
+                        ? Colors.grey[800]!.withValues(alpha:  0.5)
                         : Colors.grey[200],
                   ),
                   itemBuilder: (context, index) {

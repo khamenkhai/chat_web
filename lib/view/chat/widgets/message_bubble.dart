@@ -1,6 +1,7 @@
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:chat_web/fire_chat/models/message_models.dart' as types;
+import 'package:chat_web/fire_chat/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/file_message_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -41,10 +42,21 @@ class MessageBubble extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isMe) _buildUserAvatar(context),
+          // if (!isMe) _buildUserAvatar(context),
           _buildDeletedBox(theme),
+          if (!isMe)
+            Container(
+              margin: EdgeInsets.only(left: 10),
+              child: Text(
+                _formatTime(message.createdAt ?? 0),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -59,15 +71,17 @@ class MessageBubble extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isMe) _buildUserAvatar(context),
+          // if (!isMe) _buildUserAvatar(context),
           GestureDetector(
             onTap: () => _handleMessageTap(context),
             onLongPress: onLongPress,
             child: Row(
               children: [
-                _buildMessageContentContainer(messageColors, theme,context),
+                if(isMe) _buildLikeButton(context),
+                _buildMessageContentContainer(messageColors, theme, context),
                 if (!isMe) _buildLikeButton(context),
               ],
             ),
@@ -77,18 +91,20 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContentContainer(MessageColors messageColors, ThemeData theme,BuildContext context){
+  Widget _buildMessageContentContainer(
+      MessageColors messageColors, ThemeData theme, BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: isMe 
+        color: isMe
             ? messageColors.current.withValues(alpha: 0.2)
             : messageColors.otherColor,
         borderRadius: _bubbleBorderRadius(),
       ),
       child: IntrinsicWidth(
         child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!isMe) _buildSenderName(theme),
@@ -145,7 +161,8 @@ class MessageBubble extends StatelessWidget {
     onTap();
   }
 
-  void _downloadFile(types.FileMessage fileMessage, BuildContext context) async {
+  void _downloadFile(
+      types.FileMessage fileMessage, BuildContext context) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -172,6 +189,7 @@ class MessageBubble extends StatelessWidget {
     }
   }
 
+  // ignore: unused_element
   Widget _buildUserAvatar(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -198,19 +216,29 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildLikeButton(BuildContext context) {
-    return Center(
-      child: Material(
-        color: context.onPrimary,
-        borderRadius: BorderRadius.circular(100),
-        child: InkWell(
-          onTap: () {},
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            child: const Icon(IconlyLight.heart, size: 15),
-          ),
-        ),
+  Widget _buildLikeButton(
+    BuildContext context,
+  ) {
+    return IconButton(
+      onPressed: () {
+        FireChat.instance.reactToMessage(
+          roomId: roomId,
+          messageId: message.id,
+          emoji: "❤️",
+        );
+      },
+      icon: FutureBuilder(
+        future:  FireChat.instance.getMyReaction(roomId: roomId, messageId: message.id),
+        builder: (context, snapshot) {
+          final String? myReaction = snapshot.data;
+          return myReaction!= null ? Text(myReaction): Icon(
+            IconlyLight.heart,
+            size: 15,
+          );
+        }
       ),
+      padding: EdgeInsets.all(0),
+      splashRadius: 20,
     );
   }
 
@@ -221,7 +249,8 @@ class MessageBubble extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
+        color:
+            isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
         borderRadius: BorderRadius.only(
           topRight: isMe ? const Radius.circular(8) : Radius.zero,
           topLeft: isMe ? const Radius.circular(8) : Radius.zero,
@@ -235,7 +264,9 @@ class MessageBubble extends StatelessWidget {
               const Icon(Icons.subdirectory_arrow_right, size: 12),
               const SizedBox(width: 10),
               Text(
-                isReplyFromMe ? 'yourself' : repliedMessage.author.firstName ?? 'User',
+                isReplyFromMe
+                    ? 'yourself'
+                    : repliedMessage.author.firstName ?? 'User',
                 style: theme.textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -325,7 +356,7 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildImageMessage(ThemeData theme) {
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 5),
       child: ClipRRect(
@@ -416,7 +447,9 @@ class MessageBubble extends StatelessWidget {
     return Icon(
       isSeen ? Icons.done_all : Icons.done,
       size: 16,
-      color: isSeen ? context.primaryColor : Theme.of(context).colorScheme.onSurfaceVariant,
+      color: isSeen
+          ? context.primaryColor
+          : Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
 
@@ -434,5 +467,6 @@ class MessageBubble extends StatelessWidget {
     return DateFormat('hh:mm a').format(date);
   }
 
-  static const EdgeInsets _messagePadding = EdgeInsets.symmetric(horizontal: 8, vertical: 2);
+  static const EdgeInsets _messagePadding =
+      EdgeInsets.symmetric(horizontal: 8, vertical: 2);
 }

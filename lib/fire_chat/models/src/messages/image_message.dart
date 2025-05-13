@@ -53,7 +53,7 @@ abstract class ImageMessage extends Message {
     double? width,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) = _ImageMessage;
 
   /// Creates an image message from a map (decoded JSON).
@@ -73,7 +73,7 @@ abstract class ImageMessage extends Message {
     int? updatedAt,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) =>
       _ImageMessage(
         author: author,
@@ -154,7 +154,7 @@ abstract class ImageMessage extends Message {
     double? width,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   });
 
   /// Converts an image message to the map representation, encodable to JSON.
@@ -232,7 +232,7 @@ class _ImageMessage extends ImageMessage {
         isDeleted: isDeleted == _Unset ? this.isDeleted : isDeleted as bool?,
         reactions: reactions == _Unset
             ? this.reactions
-            : reactions as Map<String, List<String>>?,
+            : reactions as Map<String, String>?,
       );
 }
 

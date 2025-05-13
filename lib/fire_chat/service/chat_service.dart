@@ -514,14 +514,12 @@ class FireChat {
   }
 
   void setOnline(bool online) {
-    
     if (firebaseUser == null) return;
 
     getFirebaseFirestore.collection('users').doc(firebaseUser?.uid).update({
       'isOnline': online,
       'lastSeen': FieldValue.serverTimestamp(),
     });
-
   }
 
   Future<List<mm.User>> searchUsersByFullName(String query) async {
@@ -820,5 +818,75 @@ class FireChat {
 
       return mm.Message.fromJson(data);
     });
+  }
+
+  Future<void> reactToMessage({
+    required String roomId,
+    required String messageId,
+    required String emoji,
+  }) async {
+    if (firebaseUser == null) return;
+
+    final String userId = firebaseUser?.uid ?? "";
+
+    final messageRef = FirebaseFirestore.instance
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
+        .doc(messageId);
+
+    final snapshot = await messageRef.get();
+
+    if (!snapshot.exists) {
+      if (kDebugMode) {
+        print('Message does not exist.');
+      }
+      return;
+    }
+
+    final data = snapshot.data();
+    final reactions = Map<String, dynamic>.from(data?['reactions'] ?? {});
+
+    if (reactions[emoji] == userId) {
+      // If the same user taps the same emoji again, remove the reaction
+      reactions.remove(emoji);
+    } else {
+      // Add or update the reaction
+      reactions[emoji] = userId;
+    }
+
+    await messageRef.update({'reactions': reactions});
+  }
+
+  Future<String?> getMyReaction({
+    required String roomId,
+    required String messageId,
+  }) async {
+    if (firebaseUser == null) return null;
+
+    final String userId = firebaseUser!.uid;
+
+    final messageRef = FirebaseFirestore.instance
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
+        .doc(messageId);
+
+    final snapshot = await messageRef.get();
+
+    if (!snapshot.exists) {
+      if (kDebugMode) {
+        
+        ('Message does not exist.');
+      }
+      return null;
+    }
+
+    final data = snapshot.data();
+    final reactions = Map<String, dynamic>.from(data?['reactions'] ?? {});
+
+    for (final entry in reactions.entries) {
+      if (entry.value == userId) {
+        return entry.key; // Return the emoji
+      }
+    }
+
+    return null; // No reaction by this user
   }
 }

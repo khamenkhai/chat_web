@@ -59,6 +59,7 @@ dependencies:
   responsive_builder: ^0.7.1
   flutter_animate: ^4.5.2
   photo_view: ^0.15.0
+  emoji_picker_flutter: ^4.3.0
   # flutter_firebase_chat_core: ^1.6.8
 
 dev_dependencies:

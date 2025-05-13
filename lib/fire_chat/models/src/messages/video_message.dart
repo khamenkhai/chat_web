@@ -53,7 +53,7 @@ abstract class VideoMessage extends Message {
     double? width,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) = _VideoMessage;
 
   /// Creates a video message from a map (decoded JSON).
@@ -73,7 +73,7 @@ abstract class VideoMessage extends Message {
     int? updatedAt,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   }) =>
       _VideoMessage(
         author: author,
@@ -154,7 +154,7 @@ abstract class VideoMessage extends Message {
     double? width,
     bool? isEdited,
     bool? isDeleted,
-    Map<String, List<String>>? reactions,
+    Map<String, String>? reactions,
   });
 
   /// Converts a video message to the map representation, encodable to JSON.
@@ -232,7 +232,7 @@ class _VideoMessage extends VideoMessage {
         isDeleted: isDeleted == _Unset ? this.isDeleted : isDeleted as bool?,
         reactions: reactions == _Unset
             ? this.reactions
-            : reactions as Map<String, List<String>>?,
+            : reactions as Map<String, String>?,
       );
 }
 
