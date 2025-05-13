@@ -54,13 +54,6 @@ final routerProvider = Provider<GoRouter>(
             return ChatPage(roomId: roomId);
           },
         ),
-        // GoRoute(
-        //   path: '/chat',
-        //   builder: (context, state) {
-        //     final types.Room room = state.extra as types.Room;
-        //     return ChatPage(room: room);
-        //   },
-        // ),
       ],
       errorBuilder: (context, state) => Scaffold(
         body: Center(

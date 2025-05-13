@@ -38,8 +38,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     // For simplicity, we'll use system theme by default
     final brightness = WidgetsBinding.instance.window.platformBrightness;
     state = state.copyWith(
-      themeMode: ThemeMode.light,
-      // themeMode: ThemeMode.system,
+      themeMode: ThemeMode.system,
       isDarkMode: brightness == Brightness.dark,
     );
   }

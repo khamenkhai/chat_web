@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 @immutable
 class AppTheme {
   // System UI Overlay Styles
-  static const SystemUiOverlayStyle _lightSystemOverlayStyle = SystemUiOverlayStyle(
+  static const SystemUiOverlayStyle _lightSystemOverlayStyle =
+      SystemUiOverlayStyle(
     statusBarBrightness: Brightness.dark,
     statusBarIconBrightness: Brightness.dark,
     statusBarColor: Colors.transparent,
@@ -12,7 +13,8 @@ class AppTheme {
     systemNavigationBarIconBrightness: Brightness.dark,
   );
 
-  static const SystemUiOverlayStyle _darkSystemOverlayStyle = SystemUiOverlayStyle(
+  static const SystemUiOverlayStyle _darkSystemOverlayStyle =
+      SystemUiOverlayStyle(
     statusBarBrightness: Brightness.light,
     statusBarIconBrightness: Brightness.light,
     statusBarColor: Colors.transparent,
@@ -110,6 +112,7 @@ class AppTheme {
         surface: Colors.white,
         onSurface: Colors.black,
         onSurfaceVariant: _mutedForeground,
+        tertiary: _muted
       ),
       extensions: <ThemeExtension<dynamic>>[
         MessageColors(
@@ -117,7 +120,8 @@ class AppTheme {
           otherColor: _lightMessageOther,
           currentText: _lightMessageCurrentText,
           otherText: _lightMessageOtherText,
-          replyColor: Colors.grey.shade300
+          myReplyColor: Color(0xFFE0F2FE), // Light blue-50 for your replies
+          otherReplyColor:Colors.grey.shade300
         ),
       ],
       scaffoldBackgroundColor: Colors.white,
@@ -326,15 +330,16 @@ class AppTheme {
         surface: const Color(0xFF0F172A),
         onSurface: Colors.white,
         onSurfaceVariant: _darkMutedForeground,
-        
+        tertiary: _darkMuted
       ),
       extensions: <ThemeExtension<dynamic>>[
         MessageColors(
           current: _darkMessageCurrent,
           otherColor: _darkMessageOther,
           currentText: _darkMessageCurrentText,
-          replyColor: Colors.grey.shade700,
           otherText: _darkMessageOtherText,
+          myReplyColor: Color(0xFF0C4A6E), // Dark blue-900 for your replies
+          otherReplyColor: Colors.blueGrey.shade800
         ),
       ],
       scaffoldBackgroundColor: const Color(0xFF020617), // Slate-950
@@ -540,14 +545,16 @@ class MessageColors extends ThemeExtension<MessageColors> {
     required this.otherColor,
     required this.currentText,
     required this.otherText,
-    required this.replyColor,
+    required this.myReplyColor,
+    required this.otherReplyColor,
   });
 
   final Color current;
   final Color otherColor;
   final Color currentText;
   final Color otherText;
-  final Color replyColor;
+  final Color myReplyColor;
+  final Color otherReplyColor;
 
   @override
   MessageColors copyWith({
@@ -555,14 +562,16 @@ class MessageColors extends ThemeExtension<MessageColors> {
     Color? other,
     Color? currentText,
     Color? otherText,
-    Color? replyColor,
+    Color? myReplyColor,
+    Color? otherReplyColor,
   }) {
     return MessageColors(
       current: current ?? this.current,
       otherColor: other ?? otherColor,
       currentText: currentText ?? this.currentText,
       otherText: otherText ?? this.otherText,
-      replyColor: replyColor ?? this.replyColor,
+      myReplyColor: myReplyColor ?? this.myReplyColor,
+      otherReplyColor: otherReplyColor ?? this.otherReplyColor,
     );
   }
 
@@ -576,7 +585,8 @@ class MessageColors extends ThemeExtension<MessageColors> {
       otherColor: Color.lerp(otherColor, other.otherColor, t)!,
       currentText: Color.lerp(currentText, other.currentText, t)!,
       otherText: Color.lerp(otherText, other.otherText, t)!,
-      replyColor: Color.lerp(replyColor, other.replyColor, t)!,
+      myReplyColor: Color.lerp(myReplyColor, other.myReplyColor, t)!,
+      otherReplyColor: Color.lerp(otherReplyColor, other.otherReplyColor, t)!,
     );
   }
 }

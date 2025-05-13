@@ -1,38 +1,36 @@
 import 'package:flutter/material.dart';
-
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
+import 'package:iconly/iconly.dart';
 
 class FileMessageTile extends StatelessWidget {
+  
   final types.FileMessage message;
-
   const FileMessageTile({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
+
     final theme = Theme.of(context);
+    final icon = _getFileIcon(message.mimeType);
 
     return Container(
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.dividerColor.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
+      margin: EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_getFileIcon(message.mimeType), size: 32),
+          Icon(icon, size: 32),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                message.name,
-                style: theme.textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis,
+              SizedBox(
+                width: (message.name.length.toDouble() * 3),
+                child: Text(
+                  message.name,
+                  style: theme.textTheme.bodyMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               Text(
                 _formatFileSize(message.size),
@@ -48,25 +46,18 @@ class FileMessageTile extends StatelessWidget {
   }
 
   IconData _getFileIcon(String? mimeType) {
-    const defaultIcon = Icons.insert_drive_file;
-    if (mimeType == null) return defaultIcon;
+    if (mimeType == null) return IconlyLight.document;
 
-    final iconMap = {
-      'pdf': Icons.picture_as_pdf,
-      'word': Icons.description,
-      'excel': Icons.table_chart,
-      'powerpoint': Icons.slideshow,
-      'zip': Icons.archive,
-      'image': Icons.image,
-      'audio': Icons.audiotrack,
-      'video': Icons.videocam,
-    };
+    if (mimeType.contains('pdf')) return Icons.picture_as_pdf;
+    if (mimeType.contains('word')) return Icons.description;
+    if (mimeType.contains('excel')) return Icons.table_chart;
+    if (mimeType.contains('powerpoint')) return Icons.slideshow;
+    if (mimeType.contains('zip')) return Icons.archive;
+    if (mimeType.contains('image')) return Icons.image;
+    if (mimeType.contains('audio')) return Icons.audiotrack;
+    if (mimeType.contains('video')) return Icons.videocam;
 
-    for (final entry in iconMap.entries) {
-      if (mimeType.contains(entry.key)) return entry.value;
-    }
-
-    return defaultIcon;
+    return IconlyLight.document;
   }
 
   String _formatFileSize(num size) {

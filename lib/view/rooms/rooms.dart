@@ -1,15 +1,18 @@
+import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
-import 'package:chat_web/service/chat_service.dart';
+import 'package:chat_web/core/component/loading_widget.dart';
+import 'package:chat_web/core/utils/context_extension.dart';
+import 'package:chat_web/fire_chat/service/chat_service.dart';
+import 'package:chat_web/view/utils/util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:chat_web/fire_chat/models/message_models.dart' as types;
 import '../chat/chat.dart';
-
-// same imports...
 
 class RoomsPage extends ConsumerStatefulWidget {
   const RoomsPage({super.key});
@@ -18,74 +21,225 @@ class RoomsPage extends ConsumerStatefulWidget {
   ConsumerState<RoomsPage> createState() => _RoomsPageState();
 }
 
-class _RoomsPageState extends ConsumerState<RoomsPage> {
-  void logout() async {
+class _RoomsPageState extends ConsumerState<RoomsPage>
+    with WidgetsBindingObserver {
+      
+  Future<void> _logout() async {
+    setOnline(false);
     await FirebaseAuth.instance.signOut();
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setOnline(true); // Don't update lastSeen here
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      setOnline(false); // lastSeen will be updated in here
+    }
+  }
+
+  void setOnline(bool online) {
+    FireChat.instance.setOnline(online);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isLargeScreen = constraints.maxWidth >= 800;
-            return isLargeScreen
-                ? Row(
-                    children: [
-                      Container(
-                        width: 350,
-                        // width: MediaQuery.of(context).size.width / 4,
-                        decoration: BoxDecoration(
-                          border: Border(
-                            right: BorderSide(
-                              color: Colors.grey,
-                              width: 0.5,
-                            ),
-                          ),
-                        ),
-                        child: _buildRoomsList(),
-                      ),
-                      Expanded(
-                        child: ref.watch(selectedRoomProvider) == null
-                            ? _buildEmptyState()
-                            : ChatPage(roomId: ref.watch(selectedRoomProvider)?.id ?? ""),
-                      ),
-                    ],
-                  )
-                : _buildRoomsList();
-          },
+    debugPrint("=> room page rebuild!");
+    return ScreenTypeLayout.builder(
+      mobile: (context) => Scaffold(
+        body: SafeArea(child: _buildRoomsSidebar(isMobile: true)),
+      ),
+      tablet: (context) => Scaffold(
+        body: SafeArea(child: _buildRoomsSidebar(isMobile: true)),
+      ),
+      desktop: (context) => Scaffold(
+        body: SafeArea(
+          child: Row(
+            children: [
+              _buildRoomsSidebar(),
+              _buildChatArea(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  String formatTimeAgo(int timestamp) {
-    return timeago.format(DateTime.fromMillisecondsSinceEpoch(timestamp));
+  Widget _buildRoomsSidebar({bool isMobile = false}) {
+    return Container(
+      width: isMobile ? double.infinity : 350,
+      decoration: BoxDecoration(
+        border: isMobile
+            ? Border()
+            : Border(
+                right: BorderSide(
+                  color: Colors.grey,
+                  width: 0.5,
+                ),
+              ),
+      ),
+      child: Column(
+        children: [
+          _buildAppBar(),
+          _buildSearchField(),
+          const SizedBox(height: 10),
+          _buildRoomsList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatArea() {
+    return Expanded(
+      child: ref.watch(selectedRoomProvider) == null
+          ? _buildEmptyState()
+          : ChatPage(roomId: ref.read(selectedRoomProvider)?.id ?? ""),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Text(
+            'Chats',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const Spacer(),
+          PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            onSelected: (value) {
+              if (value == 'logout') _logout();
+              if (value == 'users') context.go("/users");
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'logout', child: Text('Logout')),
+              const PopupMenuItem(value: 'Setting', child: Text('Setting')),
+              const PopupMenuItem(value: 'users', child: Text('Users')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return GestureDetector(
+      onTap: () => context.go("/users"),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 7),
+        padding: EdgeInsets.only(left: 15),
+        height: 35,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          color: context.colorScheme.tertiary,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Search...",
+              textAlign: TextAlign.start,
+              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoomsList() {
+    final roomsAsync = ref.watch(roomsFutureProvider);
+
+    return Expanded(
+      child: roomsAsync.when(
+        loading: () => LoadingWidget(),
+        error: (error, stack) => _buildErrorState(),
+        data: (rooms) =>
+            rooms.isEmpty ? _buildEmptyListState() : _buildRoomList(rooms),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Text(
+        'Error loading rooms',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.error,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyListState() {
+    return Center(
+      child: Text(
+        'No rooms available',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildRoomList(List<types.Room> rooms) {
+    final sortedRooms = List<types.Room>.from(rooms)
+      ..sort((a, b) => (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      itemCount: sortedRooms.length,
+      itemBuilder: (context, index) {
+        final room = sortedRooms[index];
+        return _buildRoomItem(room);
+      },
+    );
   }
 
   Widget _buildRoomItem(types.Room room) {
     final isSelected = ref.watch(selectedRoomProvider) == room;
-    final isLargeScreen = MediaQuery.of(context).size.width >= 800;
+    final isDesktop =
+        getDeviceType(MediaQuery.of(context).size) == DeviceScreenType.desktop;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
-        color: isSelected && isLargeScreen
-            ? Theme.of(context)
-                .colorScheme
-                .primaryContainer
-                .withValues(alpha: 0.15)
+        color: isSelected && isDesktop
+            ? Theme.of(context).colorScheme.primaryContainer.withAlpha(38)
             : Theme.of(context)
                 .colorScheme
                 .surfaceContainerHighest
-                .withValues(alpha: 0.05),
+                .withAlpha(13),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: 5),
-        leading: CircleAvatar(),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 5),
+        leading: _buildAvatar(room),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         title: Text(
           room.name ?? 'Unknown',
@@ -94,11 +248,26 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
               .titleSmall
               ?.copyWith(fontWeight: FontWeight.w600),
         ),
-        subtitle: FutureBuilder(
-          future: ChatlyChatCore.instance.getLastMessage(room.id),
-          builder: (context, lastMsgSnap) {
+        subtitle: StreamBuilder<types.Message?>(
+          stream: FireChat.instance.lastMessageStream(room.id),
+          builder: (context, snapshot) {
+            final lastMsg = snapshot.data;
+
+            String displayText;
+            if (lastMsg is types.TextMessage) {
+              displayText = lastMsg.text;
+            } else if (lastMsg is types.ImageMessage) {
+              displayText = '🖼️ Image';
+            } else if (lastMsg is types.FileMessage) {
+              displayText = '📄 File';
+            } else if (lastMsg == null) {
+              displayText = '...';
+            } else {
+              displayText = 'Unsupported message';
+            }
+
             return Text(
-              lastMsgSnap.data ?? "No messages yet",
+              displayText,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -108,18 +277,12 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
           },
         ),
         trailing: Text(
-          formatTimeAgo(room.updatedAt ?? 0),
+          _formatTimeAgo(room.updatedAt ?? 0),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(context).colorScheme.outline,
               ),
         ),
-        onTap: () {
-          if (isLargeScreen) {
-            ref.read(selectedRoomProvider.notifier).state = room;
-          } else {
-            context.go("/chat/${room.id}", extra: room.id);
-          }
-        },
+        onTap: () => _onRoomTap(room),
       ),
     );
   }
@@ -158,99 +321,52 @@ class _RoomsPageState extends ConsumerState<RoomsPage> {
     );
   }
 
-  Widget _buildRoomsList() {
-    return Column(
-      children: [
-        Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Text(
-                'Chats',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              PopupMenuButton<String>(
-                padding: EdgeInsets.all(0),
-                onSelected: (value) {
-                  if (value == 'logout') logout();
-                  if (value == 'users') context.go("/users");
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'logout', child: Text('Logout')),
-                  const PopupMenuItem(value: 'Setting', child: Text('Setting')),
-                  const PopupMenuItem(value: 'users', child: Text('Users')),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 7
-          ),
-          height: 35,
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-            onChanged: (text) {
-              setState(() {});
-            },
-          ),
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: StreamBuilder<List<types.Room>>(
-            stream: ChatlyChatCore.instance.rooms(),
-            initialData: const [],
-            builder: (context, snapshot) {
-              // if (snapshot.connectionState == ConnectionState.waiting) {
-              //   return const Center(
-              //     child: LoadingWidget(),
-              //   );
-              // }
+  String _formatTimeAgo(int timestamp) {
+    return timeago.format(DateTime.fromMillisecondsSinceEpoch(timestamp));
+  }
 
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(
-                  child: Text(
-                    'No rooms available',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                );
-              }
+  void _onRoomTap(types.Room room) {
+    final deviceType = getDeviceType(MediaQuery.of(context).size);
+    final isDesktop = deviceType == DeviceScreenType.desktop;
+    // ||   deviceType == DeviceScreenType.tablet;
 
-              final sortedRooms = List<types.Room>.from(snapshot.data!)
-                ..sort(
-                    (a, b) => (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
+    if (isDesktop) {
+      ref.read(selectedRoomProvider.notifier).state = room;
+    } else {
+      context.go("/chat/${room.id}", extra: room.id);
+    }
+  }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 1),
-                itemCount: sortedRooms.length,
-                itemBuilder: (context, index) {
-                  final room = sortedRooms[index];
-                  return _buildRoomItem(room);
-                },
-              );
-            },
-          ),
-        ),
-      ],
+  Widget _buildAvatar(types.Room room) {
+    var color = Colors.transparent;
+
+    if (room.type == types.RoomType.direct) {
+      try {
+        final otherUser = room.users
+            .firstWhere((u) => u.id != FirebaseAuth.instance.currentUser?.uid);
+
+        color = getUserAvatarNameColor(otherUser);
+      } catch (e) {
+        // Do nothing if other user is not found.
+      }
+    }
+
+    final hasImage = room.imageUrl != null;
+    final name = room.name ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(right: 16),
+      child: CircleAvatar(
+        backgroundColor: hasImage ? Colors.transparent : color,
+        backgroundImage: hasImage ? NetworkImage(room.imageUrl!) : null,
+        radius: 20,
+        child: !hasImage
+            ? Text(
+                name.isEmpty ? '' : name[0].toUpperCase(),
+                style: const TextStyle(color: Colors.white),
+              )
+            : null,
+      ),
     );
   }
 }
