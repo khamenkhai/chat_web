@@ -276,11 +276,16 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
             );
           },
         ),
-        trailing: Text(
-          _formatTimeAgo(room.updatedAt ?? 0),
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
+        trailing: StreamBuilder<types.Message?>(
+        stream: FireChat.instance.lastMessageStream(room.id),
+          builder: (context, snapshot) {
+            return Text(
+              _formatTimeAgo(snapshot.data?.updatedAt ?? 0),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            );
+          }
         ),
         onTap: () => _onRoomTap(room),
       ),

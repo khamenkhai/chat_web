@@ -174,7 +174,11 @@ class _MessageInputState extends State<MessageInput> {
                           onPressed: () => _handleFileSelection(ref),
                         ),
                   isImageUploading
-                      ? LoadingWidget()
+                      ? Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 5,
+                          ),
+                          child: LoadingWidget())
                       : IconButton(
                           icon: Icon(
                             IconlyLight.image_2,

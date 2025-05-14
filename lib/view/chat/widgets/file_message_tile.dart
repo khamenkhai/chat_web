@@ -25,7 +25,7 @@ class FileMessageTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: (message.name.length.toDouble() * 3),
+                // width: (message.name.length.toDouble() * 3),
                 child: Text(
                   message.name,
                   style: theme.textTheme.bodyMedium,

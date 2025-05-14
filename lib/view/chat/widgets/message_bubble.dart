@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'package:iconly/iconly.dart';
+import 'package:photo_view/photo_view.dart';
 
 class MessageBubble extends StatelessWidget {
   final types.Message message;
@@ -80,9 +81,9 @@ class MessageBubble extends StatelessWidget {
             onLongPress: onLongPress,
             child: Row(
               children: [
-                if(isMe) _buildLikeButton(context),
+                if (isMe) _buildLikeButton(context: context,isMe: isMe),
                 _buildMessageContentContainer(messageColors, theme, context),
-                if (!isMe) _buildLikeButton(context),
+                if (!isMe) _buildLikeButton(context: context,isMe: false),
               ],
             ),
           ),
@@ -107,11 +108,11 @@ class MessageBubble extends StatelessWidget {
               isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isMe) _buildSenderName(theme),
+            // if (!isMe) _buildSenderName(theme),
             if (message.repliedMessage != null)
               _buildReplyWidget(theme, message.repliedMessage!),
             if (message is! types.FileMessage) const SizedBox(height: 5),
-            _buildMessageContent(theme),
+            _buildMessageContent(theme,context),
             _buildMessageStatus(theme, context),
             const SizedBox(height: 5),
           ],
@@ -216,29 +217,46 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildLikeButton(
-    BuildContext context,
-  ) {
-    return IconButton(
-      onPressed: () {
-        FireChat.instance.reactToMessage(
-          roomId: roomId,
-          messageId: message.id,
-          emoji: "❤️",
-        );
-      },
-      icon: FutureBuilder(
-        future:  FireChat.instance.getMyReaction(roomId: roomId, messageId: message.id),
-        builder: (context, snapshot) {
-          final String? myReaction = snapshot.data;
-          return myReaction!= null ? Text(myReaction): Icon(
-            IconlyLight.heart,
-            size: 15,
-          );
-        }
+  Widget _buildLikeButton({
+    required BuildContext context,
+    required bool isMe
+  }) {
+    return Container(
+      margin: EdgeInsets.only(
+        left: isMe ? 0 : 10,
+        right: !isMe ? 0 : 10,
       ),
-      padding: EdgeInsets.all(0),
-      splashRadius: 20,
+      child: InkWell(
+        onTap: () {
+          FireChat.instance.reactToMessage(
+            roomId: roomId,
+            messageId: message.id,
+            emoji: "❤️",
+          );
+        },
+        borderRadius: BorderRadius.circular(100),
+        child: Container(
+          padding: EdgeInsets.all(1),
+          decoration: BoxDecoration(),
+          child: FutureBuilder(
+            future: FireChat.instance
+                .getMyReaction(roomId: roomId, messageId: message.id),
+            builder: (context, snapshot) {
+              final String? myReaction = snapshot.data;
+              return myReaction != null
+                  ? Icon(
+                      IconlyBold.heart,
+                      color: context.primaryColor,
+                      size: 15,
+                    )
+                  : Icon(
+                      IconlyLight.heart,
+                      size: 15,
+                    );
+            },
+          ),
+        ),
+      ),
     );
   }
 
@@ -252,8 +270,10 @@ class MessageBubble extends StatelessWidget {
         color:
             isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
         borderRadius: BorderRadius.only(
-          topRight: isMe ? const Radius.circular(8) : Radius.zero,
-          topLeft: isMe ? const Radius.circular(8) : Radius.zero,
+          topRight:  Radius.circular(12),
+          topLeft:  Radius.circular(12) 
+          // topRight: isMe ? const Radius.circular(8) : Radius.circular(16),
+          // topLeft: isMe ? const Radius.circular(8) : Radius.zero,
         ),
       ),
       child: Column(
@@ -317,6 +337,7 @@ class MessageBubble extends StatelessWidget {
     return const SizedBox.shrink();
   }
 
+  // ignore: unused_element
   Widget _buildSenderName(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -330,11 +351,11 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContent(ThemeData theme) {
+  Widget _buildMessageContent(ThemeData theme,BuildContext context) {
     if (message is types.TextMessage) {
       return _buildTextMessage(theme);
     } else if (message is types.ImageMessage) {
-      return _buildImageMessage(theme);
+      return _buildImageMessage(theme,context);
     } else if (message is types.FileMessage) {
       return FileMessageTile(message: message as types.FileMessage);
     }
@@ -343,7 +364,7 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildTextMessage(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Text(
         (message as types.TextMessage).text,
         style: theme.textTheme.bodyLarge?.copyWith(
@@ -354,15 +375,33 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildImageMessage(ThemeData theme) {
-    final colorScheme = theme.colorScheme;
+ Widget _buildImageMessage(ThemeData theme,BuildContext context) {
+  final colorScheme = theme.colorScheme;
+  final imageUrl = (message as types.ImageMessage).uri;
 
-    return Container(
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(context,
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            // backgroundColor: Colors.black,
+            appBar: AppBar(),
+            body: Center(
+              child: PhotoView(
+                imageProvider: NetworkImage(imageUrl),
+                backgroundDecoration: const BoxDecoration(color: Colors.black),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 5),
       child: ClipRRect(
         borderRadius: _bubbleBorderRadius(),
         child: Image.network(
-          (message as types.ImageMessage).uri,
+          imageUrl,
           width: 220,
           height: 220,
           fit: BoxFit.cover,
@@ -375,8 +414,9 @@ class MessageBubble extends StatelessWidget {
           },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildImageLoadingIndicator(ImageChunkEvent progress) {
     return SizedBox(
@@ -455,10 +495,12 @@ class MessageBubble extends StatelessWidget {
 
   BorderRadius _bubbleBorderRadius() {
     return BorderRadius.only(
-      bottomLeft: const Radius.circular(16),
-      bottomRight: const Radius.circular(16),
-      topLeft: Radius.circular(isMe ? 16 : 4),
-      topRight: Radius.circular(isMe ? 4 : 16),
+      bottomLeft: const Radius.circular(12),
+      bottomRight: const Radius.circular(12),
+      topLeft: Radius.circular(12),
+      topRight: Radius.circular(12),
+      // topLeft: Radius.circular(isMe ? 16 : 4),
+      // topRight: Radius.circular(isMe ? 4 : 16),
     );
   }
 
