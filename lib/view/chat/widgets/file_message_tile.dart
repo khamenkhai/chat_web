@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:chat_web/fire_chat/models/message_models.dart' as types;
+import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:iconly/iconly.dart';
 
 class FileMessageTile extends StatelessWidget {

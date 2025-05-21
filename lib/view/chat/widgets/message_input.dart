@@ -1,7 +1,6 @@
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
-import 'package:chat_web/fire_chat/service/chat_service.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
 import 'dart:io';
@@ -9,7 +8,8 @@ import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' as foundation;
-import 'package:chat_web/fire_chat/models/message_models.dart' as types;
+import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
@@ -96,7 +96,7 @@ class _MessageInputState extends State<MessageInput> {
         final room = ref.read(selectedRoomProvider.notifier).state;
 
         if (room != null) {
-          FireChat.instance.sendMessage(message, room.id);
+          FyreChat.instance.sendMessage(message, room.id);
         }
       } finally {
         ref.read(attachmentUploadingProvider.notifier).state = false;
@@ -139,7 +139,7 @@ class _MessageInputState extends State<MessageInput> {
       );
       final room = ref.read(selectedRoomProvider.notifier).state;
       if (room != null) {
-        FireChat.instance.sendMessage(message, room.id);
+        FyreChat.instance.sendMessage(message, room.id);
       }
     } catch (e) {
       if (!context.mounted) return;

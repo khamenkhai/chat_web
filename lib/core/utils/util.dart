@@ -1,10 +1,9 @@
 import 'dart:convert';
-import 'package:chat_web/fire_chat/models/src/user.dart' as types;
+import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:crypto/crypto.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
-
 
 String formatTime(String timestamp) {
   // Parse the timestamp into DateTime
@@ -59,25 +58,21 @@ Color getStatusColor(String orderStatus) {
   }
 }
 
+String extractDate(DateTime dateTime) {
+  // Define the format pattern for date only: "dd MMM yyyy"
+  DateFormat dateFormat = DateFormat("dd MMM yyyy");
+  return dateFormat.format(dateTime);
+}
 
-  String extractDate(DateTime dateTime) {
-    // Define the format pattern for date only: "dd MMM yyyy"
-    DateFormat dateFormat = DateFormat("dd MMM yyyy");
-    return dateFormat.format(dateTime);
+String extractTime(DateTime? dateTime) {
+  // Define the format pattern for time only: "hh:mm a"
+  try {
+    DateFormat timeFormat = DateFormat("hh:mm a");
+    return timeFormat.format(dateTime!);
+  } catch (e) {
+    return "";
   }
-
-  String extractTime(DateTime? dateTime) {
-    // Define the format pattern for time only: "hh:mm a"
-    try {
-      DateFormat timeFormat = DateFormat("hh:mm a");
-      return timeFormat.format(dateTime!);
-    } catch (e) {
-      return "";
-    }
-  }
-
-
-
+}
 
 String getUserName(types.User user) =>
     '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim();
@@ -89,15 +84,13 @@ String hashEmail(String email) {
   return base64UrlEncode(digest.bytes).substring(0, 16); // Shorten to 16 chars
 }
 
-
 String getTimeAgo(int timestamp) {
   DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
   return timeago.format(dateTime);
 }
 
-
 String getFirebaseUserId(int laravelUserId) {
   // Convert numeric ID to a Firebase-friendly format
-  return 'user_${laravelUserId.toString().padLeft(10, '0')}'; 
+  return 'user_${laravelUserId.toString().padLeft(10, '0')}';
   // Example: user_0000000123
 }
