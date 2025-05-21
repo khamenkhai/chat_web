@@ -1,19 +1,19 @@
 import 'dart:async';
-import 'package:chat_web/core/utils/chat_util.dart';
-import 'package:chat_web/fire_chat/const/fire_chat_const.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:chat_web/fire_chat/models/message_models.dart' as mm;
+import 'package:chat_web/chat_service/models/message_models.dart' as mm;
+import 'package:chat_web/chat_service/const/fire_chat_const.dart';
+import 'package:chat_web/chat_service/util/chat_util.dart';
 
-class FireChat {
-  FireChat._privateConstructor() {
+class FyreChat {
+  FyreChat._privateConstructor() {
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
       firebaseUser = user;
     });
   }
 
-  static final FireChat instance = FireChat._privateConstructor();
+  static final FyreChat instance = FyreChat._privateConstructor();
 
   /// Current logged-in user. Update is handled internally.
   User? firebaseUser = FirebaseAuth.instance.currentUser;
@@ -591,12 +591,6 @@ class FireChat {
     return seenBy.containsKey(fu.uid);
   }
 
-  /// Checks if the recipient has seen the message.
-  bool isMessageSeen(mm.Message message) {
-    final isSeen = message.metadata?['seen'] == true;
-    return isSeen;
-  }
-
   /// Fetches the custom `lastMsg` field for a specific room by its ID.
   Future<String?> getLastMessage(String roomId) async {
     try {
@@ -781,43 +775,56 @@ class FireChat {
         .orderBy('createdAt', descending: true)
         .limit(1)
         .snapshots()
-        .asyncMap((snapshot) async {
-      if (snapshot.docs.isEmpty) return null;
+        .asyncMap(
+      (snapshot) async {
+        if (snapshot.docs.isEmpty) return null;
 
-      final doc = snapshot.docs.first;
-      final data = doc.data();
+        final doc = snapshot.docs.first;
+        final data = doc.data();
 
-      // Skip if message is deleted
-      // if (data['isDeleted'] == true) return null;
+        // Skip if message is deleted
+        // if (data['isDeleted'] == true) return null;
 
-      // Get room to resolve author info
-      final roomDoc = await getFirebaseFirestore
-          .collection(FireChatConst.roomsCollectionName)
-          .doc(roomId)
-          .get();
+        // Get room to resolve author info
+        final roomDoc = await getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
+            .doc(roomId)
+            .get();
 
-      if (!roomDoc.exists) return null;
+        if (!roomDoc.exists) return null;
 
-      final room = await processRoomDocument(
-        roomDoc,
-        firebaseUser!,
-        getFirebaseFirestore,
-        FireChatConst.usersCollectionName,
-      );
+        final room = await processRoomDocument(
+          roomDoc,
+          firebaseUser!,
+          getFirebaseFirestore,
+          FireChatConst.usersCollectionName,
+        );
 
-      final author = room.users.firstWhere(
-        (u) => u.id == data['authorId'],
-        orElse: () => mm.User(id: data['authorId'] as String),
-      );
+        final author = room.users.firstWhere(
+          (u) => u.id == data['authorId'],
+          orElse: () => mm.User(id: data['authorId'] as String),
+        );
 
-      data['author'] = author.toJson();
-      data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
-      data['id'] = doc.id;
-      data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
-      data['isDeleted'] = data['isDeleted'];
+        data['author'] = author.toJson();
+        data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+        data['id'] = doc.id;
+        data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+        data['isDeleted'] = data['isDeleted'];
 
-      return mm.Message.fromJson(data);
-    });
+        // Check if the message has been seen by all users
+        final seenBy = data['seenBy'] as Map<String, dynamic>? ?? {};
+
+        final allUsersHaveSeen =
+            room.users.every((user) => seenBy.containsKey(user.id));
+
+        return mm.Message.fromJson(data).copyWith(
+          metadata: {
+            ...data['metadata'] ?? {},
+            'seen': allUsersHaveSeen,
+          },
+        );
+      },
+    );
   }
 
   Future<void> reactToMessage({
@@ -827,7 +834,7 @@ class FireChat {
   }) async {
     if (firebaseUser == null) return;
 
-    final String userId = firebaseUser?.uid ?? "";
+    final String userId = firebaseUser!.uid;
 
     final messageRef = FirebaseFirestore.instance
         .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
@@ -843,14 +850,15 @@ class FireChat {
     }
 
     final data = snapshot.data();
-    final reactions = Map<String, dynamic>.from(data?['reactions'] ?? {});
+    final Map<String, dynamic> reactions =
+        Map<String, dynamic>.from(data?['reactions'] ?? {});
 
-    if (reactions[emoji] == userId) {
-      // If the same user taps the same emoji again, remove the reaction
-      reactions.remove(emoji);
+    if (reactions[userId] == emoji) {
+      // If user reacted with the same emoji again, remove it
+      reactions.remove(userId);
     } else {
-      // Add or update the reaction
-      reactions[emoji] = userId;
+      // Add or update the user's reaction
+      reactions[userId] = emoji;
     }
 
     await messageRef.update({'reactions': reactions});
@@ -872,8 +880,7 @@ class FireChat {
 
     if (!snapshot.exists) {
       if (kDebugMode) {
-        
-        ('Message does not exist.');
+        print('Message does not exist.');
       }
       return null;
     }
@@ -881,12 +888,36 @@ class FireChat {
     final data = snapshot.data();
     final reactions = Map<String, dynamic>.from(data?['reactions'] ?? {});
 
-    for (final entry in reactions.entries) {
-      if (entry.value == userId) {
-        return entry.key; // Return the emoji
+    // Return the emoji for the current user if it exists
+    return reactions[userId] as String?;
+  }
+
+  Future<String?> getOtherReaction({
+    required String roomId,
+    required String messageId,
+    required String otherUserId,
+  }) async {
+    if (firebaseUser == null) return null;
+
+    final String userId = otherUserId;
+
+    final messageRef = FirebaseFirestore.instance
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
+        .doc(messageId);
+
+    final snapshot = await messageRef.get();
+
+    if (!snapshot.exists) {
+      if (kDebugMode) {
+        print('Message does not exist.');
       }
+      return null;
     }
 
-    return null; // No reaction by this user
+    final data = snapshot.data();
+    final reactions = Map<String, dynamic>.from(data?['reactions'] ?? {});
+
+    // Return the emoji for the current user if it exists
+    return reactions[userId] as String?;
   }
 }

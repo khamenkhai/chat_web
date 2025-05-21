@@ -1,13 +1,16 @@
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
-import 'package:chat_web/fire_chat/models/message_models.dart' as types;
-import 'package:chat_web/fire_chat/service/chat_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_reaction_button/flutter_reaction_button.dart';
+import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/file_message_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'package:iconly/iconly.dart';
+import 'package:photo_view/photo_view.dart';
 
 class MessageBubble extends StatelessWidget {
   final types.Message message;
@@ -15,6 +18,7 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final String roomId;
+  final types.Room room;
   final Map<String, dynamic>? metadata;
 
   const MessageBubble({
@@ -24,6 +28,7 @@ class MessageBubble extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     required this.roomId,
+    required this.room,
     this.metadata,
   });
 
@@ -80,9 +85,9 @@ class MessageBubble extends StatelessWidget {
             onLongPress: onLongPress,
             child: Row(
               children: [
-                if(isMe) _buildLikeButton(context),
+                if (isMe) _buildLikeButton(context: context, isMe: isMe),
                 _buildMessageContentContainer(messageColors, theme, context),
-                if (!isMe) _buildLikeButton(context),
+                if (!isMe) _buildLikeButton(context: context, isMe: false),
               ],
             ),
           ),
@@ -92,7 +97,10 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildMessageContentContainer(
-      MessageColors messageColors, ThemeData theme, BuildContext context) {
+    MessageColors messageColors,
+    ThemeData theme,
+    BuildContext context,
+  ) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
@@ -101,17 +109,18 @@ class MessageBubble extends StatelessWidget {
             : messageColors.otherColor,
         borderRadius: _bubbleBorderRadius(),
       ),
+      constraints: BoxConstraints(maxWidth: 250),
       child: IntrinsicWidth(
         child: Column(
           crossAxisAlignment:
               isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isMe) _buildSenderName(theme),
+            // if (!isMe) _buildSenderName(theme),
             if (message.repliedMessage != null)
               _buildReplyWidget(theme, message.repliedMessage!),
             if (message is! types.FileMessage) const SizedBox(height: 5),
-            _buildMessageContent(theme),
+            _buildMessageContent(theme, context),
             _buildMessageStatus(theme, context),
             const SizedBox(height: 5),
           ],
@@ -216,29 +225,139 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildLikeButton(
-    BuildContext context,
-  ) {
-    return IconButton(
-      onPressed: () {
-        FireChat.instance.reactToMessage(
-          roomId: roomId,
-          messageId: message.id,
-          emoji: "❤️",
-        );
-      },
-      icon: FutureBuilder(
-        future:  FireChat.instance.getMyReaction(roomId: roomId, messageId: message.id),
-        builder: (context, snapshot) {
-          final String? myReaction = snapshot.data;
-          return myReaction!= null ? Text(myReaction): Icon(
-            IconlyLight.heart,
-            size: 15,
-          );
-        }
+  Widget _buildLikeButton({
+    required BuildContext context,
+    required bool isMe,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(
+        left: isMe ? 0 : 10,
+        right: !isMe ? 0 : 10,
       ),
-      padding: EdgeInsets.all(0),
-      splashRadius: 20,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: EdgeInsets.all(1),
+            decoration: BoxDecoration(),
+            child: FutureBuilder(
+              future: FyreChat.instance.getMyReaction(
+                roomId: roomId,
+                messageId: message.id,
+              ),
+              builder: (context, snapshot) {
+                final String? myReaction = snapshot.data;
+
+                // return Text("${myReaction}");
+                return ReactionButton<String>(
+                  toggle: false,
+                  direction: ReactionsBoxAlignment.rtl,
+                  onReactionChanged: (Reaction<String>? reaction) {
+                    // Handle selected reaction
+                    FyreChat.instance.reactToMessage(
+                      roomId: roomId,
+                      messageId: message.id,
+                      emoji: reaction?.value ?? "",
+                    );
+                  },
+                  reactions: <Reaction<String>>[
+                    Reaction<String>(
+                      value: '👍',
+                      icon: Text(
+                        '👍',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    Reaction<String>(
+                      value: '❤️',
+                      icon: Text(
+                        '❤️',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    Reaction<String>(
+                      value: '😂',
+                      icon: Text(
+                        '😂',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    Reaction<String>(
+                      value: '😮',
+                      icon: Text(
+                        '😮',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    Reaction<String>(
+                      value: '😢',
+                      icon: Text(
+                        '😢',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    Reaction<String>(
+                      value: '😡',
+                      icon: Text(
+                        '😡',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ],
+                  boxElevation: 1,
+                  boxColor: Colors.white,
+                  boxRadius: 30,
+                  itemsSpacing: 12,
+                  itemSize: const Size(25, 25),
+                  child: myReaction == null
+                      ? isMe
+                          ? Container(
+                              padding: EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: context.onPrimary,
+                                  boxShadow: [
+                                    BoxShadow(
+                                        offset: Offset(0, 2),
+                                        blurRadius: 10,
+                                        color: context.secondary
+                                            .withValues(alpha: 0.2))
+                                  ]),
+                              child: Icon(
+                                IconlyLight.heart,
+                                size: 16,
+                              ),
+                            )
+                          : Icon(
+                              IconlyLight.heart,
+                              size: 16,
+                            )
+                      : Text(myReaction),
+                );
+              },
+            ),
+          ),
+          if (isMe)
+            FutureBuilder(
+              future: FyreChat.instance.getOtherReaction(
+                roomId: roomId,
+                messageId: message.id,
+                otherUserId: room.users
+                    .firstWhere(
+                        (e) => e.id != FirebaseAuth.instance.currentUser?.uid)
+                    .id,
+              ),
+              builder: (context, snapshot) {
+                return Text(
+                  snapshot.data ?? "",
+                  style: TextStyle(
+                    fontSize: 12,
+                  ),
+                );
+              },
+            )
+        ],
+      ),
     );
   }
 
@@ -252,9 +371,10 @@ class MessageBubble extends StatelessWidget {
         color:
             isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
         borderRadius: BorderRadius.only(
-          topRight: isMe ? const Radius.circular(8) : Radius.zero,
-          topLeft: isMe ? const Radius.circular(8) : Radius.zero,
-        ),
+            topRight: Radius.circular(12), topLeft: Radius.circular(12)
+            // topRight: isMe ? const Radius.circular(8) : Radius.circular(16),
+            // topLeft: isMe ? const Radius.circular(8) : Radius.zero,
+            ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,6 +437,7 @@ class MessageBubble extends StatelessWidget {
     return const SizedBox.shrink();
   }
 
+  // ignore: unused_element
   Widget _buildSenderName(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -330,11 +451,11 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContent(ThemeData theme) {
+  Widget _buildMessageContent(ThemeData theme, BuildContext context) {
     if (message is types.TextMessage) {
       return _buildTextMessage(theme);
     } else if (message is types.ImageMessage) {
-      return _buildImageMessage(theme);
+      return _buildImageMessage(theme, context);
     } else if (message is types.FileMessage) {
       return FileMessageTile(message: message as types.FileMessage);
     }
@@ -343,7 +464,7 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildTextMessage(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Text(
         (message as types.TextMessage).text,
         style: theme.textTheme.bodyLarge?.copyWith(
@@ -354,25 +475,46 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildImageMessage(ThemeData theme) {
+  Widget _buildImageMessage(ThemeData theme, BuildContext context) {
     final colorScheme = theme.colorScheme;
+    final imageUrl = (message as types.ImageMessage).uri;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 5),
-      child: ClipRRect(
-        borderRadius: _bubbleBorderRadius(),
-        child: Image.network(
-          (message as types.ImageMessage).uri,
-          width: 220,
-          height: 220,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return _buildImageLoadingIndicator(progress);
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return _buildImageErrorPlaceholder(colorScheme);
-          },
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Scaffold(
+              // backgroundColor: Colors.black,
+              appBar: AppBar(),
+              body: Center(
+                child: PhotoView(
+                  imageProvider: NetworkImage(imageUrl),
+                  backgroundDecoration:
+                      const BoxDecoration(color: Colors.black),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        child: ClipRRect(
+          borderRadius: _bubbleBorderRadius(),
+          child: Image.network(
+            imageUrl,
+            width: 220,
+            height: 220,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return _buildImageLoadingIndicator(progress);
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return _buildImageErrorPlaceholder(colorScheme);
+            },
+          ),
         ),
       ),
     );
@@ -455,10 +597,12 @@ class MessageBubble extends StatelessWidget {
 
   BorderRadius _bubbleBorderRadius() {
     return BorderRadius.only(
-      bottomLeft: const Radius.circular(16),
-      bottomRight: const Radius.circular(16),
-      topLeft: Radius.circular(isMe ? 16 : 4),
-      topRight: Radius.circular(isMe ? 4 : 16),
+      bottomLeft: const Radius.circular(12),
+      bottomRight: const Radius.circular(12),
+      topLeft: Radius.circular(12),
+      topRight: Radius.circular(12),
+      // topLeft: Radius.circular(isMe ? 16 : 4),
+      // topRight: Radius.circular(isMe ? 4 : 16),
     );
   }
 

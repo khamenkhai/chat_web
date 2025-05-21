@@ -1,17 +1,16 @@
+import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
-import 'package:chat_web/fire_chat/service/chat_service.dart';
-import 'package:chat_web/view/utils/util.dart';
+import 'package:chat_web/view/rooms/widgets/chat_room_tile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:timeago/timeago.dart' as timeago;
-import 'package:chat_web/fire_chat/models/message_models.dart' as types;
+import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import '../chat/chat.dart';
 
 class RoomsPage extends ConsumerStatefulWidget {
@@ -23,7 +22,6 @@ class RoomsPage extends ConsumerStatefulWidget {
 
 class _RoomsPageState extends ConsumerState<RoomsPage>
     with WidgetsBindingObserver {
-      
   Future<void> _logout() async {
     setOnline(false);
     await FirebaseAuth.instance.signOut();
@@ -52,7 +50,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   }
 
   void setOnline(bool online) {
-    FireChat.instance.setOnline(online);
+    FyreChat.instance.setOnline(online);
   }
 
   @override
@@ -106,7 +104,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     return Expanded(
       child: ref.watch(selectedRoomProvider) == null
           ? _buildEmptyState()
-          : ChatPage(roomId: ref.read(selectedRoomProvider)?.id ?? ""),
+          : ChatPage(),
     );
   }
 
@@ -237,52 +235,11 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                 .withAlpha(13),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 5),
-        leading: _buildAvatar(room),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        title: Text(
-          room.name ?? 'Unknown',
-          style: Theme.of(context)
-              .textTheme
-              .titleSmall
-              ?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: StreamBuilder<types.Message?>(
-          stream: FireChat.instance.lastMessageStream(room.id),
-          builder: (context, snapshot) {
-            final lastMsg = snapshot.data;
-
-            String displayText;
-            if (lastMsg is types.TextMessage) {
-              displayText = lastMsg.text;
-            } else if (lastMsg is types.ImageMessage) {
-              displayText = '🖼️ Image';
-            } else if (lastMsg is types.FileMessage) {
-              displayText = '📄 File';
-            } else if (lastMsg == null) {
-              displayText = '...';
-            } else {
-              displayText = 'Unsupported message';
-            }
-
-            return Text(
-              displayText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            );
-          },
-        ),
-        trailing: Text(
-          _formatTimeAgo(room.updatedAt ?? 0),
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-        ),
-        onTap: () => _onRoomTap(room),
+      child: ChatRoomTile(
+        room: room,
+        onTap: (p0) {
+          _onRoomTap(room);
+        },
       ),
     );
   }
@@ -321,10 +278,6 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     );
   }
 
-  String _formatTimeAgo(int timestamp) {
-    return timeago.format(DateTime.fromMillisecondsSinceEpoch(timestamp));
-  }
-
   void _onRoomTap(types.Room room) {
     final deviceType = getDeviceType(MediaQuery.of(context).size);
     final isDesktop = deviceType == DeviceScreenType.desktop;
@@ -336,37 +289,5 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
       context.go("/chat/${room.id}", extra: room.id);
     }
   }
-
-  Widget _buildAvatar(types.Room room) {
-    var color = Colors.transparent;
-
-    if (room.type == types.RoomType.direct) {
-      try {
-        final otherUser = room.users
-            .firstWhere((u) => u.id != FirebaseAuth.instance.currentUser?.uid);
-
-        color = getUserAvatarNameColor(otherUser);
-      } catch (e) {
-        // Do nothing if other user is not found.
-      }
-    }
-
-    final hasImage = room.imageUrl != null;
-    final name = room.name ?? '';
-
-    return Container(
-      margin: const EdgeInsets.only(right: 16),
-      child: CircleAvatar(
-        backgroundColor: hasImage ? Colors.transparent : color,
-        backgroundImage: hasImage ? NetworkImage(room.imageUrl!) : null,
-        radius: 20,
-        child: !hasImage
-            ? Text(
-                name.isEmpty ? '' : name[0].toUpperCase(),
-                style: const TextStyle(color: Colors.white),
-              )
-            : null,
-      ),
-    );
-  }
 }
+

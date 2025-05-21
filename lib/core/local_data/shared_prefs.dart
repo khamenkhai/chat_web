@@ -20,7 +20,6 @@ class SharedPref {
     }
   }
 
-
   // Save a string value
   Future<void> setString({required String value, required String key}) async {
     await _ensureInitialized();
@@ -70,7 +69,8 @@ class SharedPref {
   }
 
   // Save a list of strings
-  Future<void> setStringList({required List<String> value, required String key}) async {
+  Future<void> setStringList(
+      {required List<String> value, required String key}) async {
     await _ensureInitialized();
     await _sharedPreferences!.setStringList(key, value);
   }

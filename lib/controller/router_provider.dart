@@ -50,8 +50,8 @@ final routerProvider = Provider<GoRouter>(
         GoRoute(
           path: '/chat/:roomId',
           builder: (context, state) {
-            final roomId = state.pathParameters['roomId']!;
-            return ChatPage(roomId: roomId);
+            // final roomId = state.pathParameters['roomId']!;
+            return ChatPage();
           },
         ),
       ],

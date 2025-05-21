@@ -1,10 +1,9 @@
-// lib/core/providers/theme_provider.dart
 // ignore_for_file: deprecated_member_use
 
+import 'package:chat_web/core/local_data/shared_prefs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Model: Theme state
 class ThemeState {
   final ThemeMode themeMode;
   final bool isDarkMode;
@@ -25,34 +24,55 @@ class ThemeState {
   }
 }
 
-// Controller: Theme Notifier
 class ThemeNotifier extends StateNotifier<ThemeState> {
+  final SharedPref _sharedPref = SharedPref();
+
   ThemeNotifier() : super(ThemeState(
     themeMode: ThemeMode.system,
     isDarkMode: false,
   ));
 
-  // Initialize from preferences
   Future<void> loadTheme() async {
-    // Here you would load from SharedPreferences or similar
-    // For simplicity, we'll use system theme by default
-    final brightness = WidgetsBinding.instance.window.platformBrightness;
-    state = state.copyWith(
-      themeMode: ThemeMode.system,
-      isDarkMode: brightness == Brightness.dark,
-    );
+    try {
+      // Load saved theme mode (0=system, 1=light, 2=dark)
+      final savedThemeIndex = await _sharedPref.getInt(key: _sharedPref.THEME_KEY);
+      final themeMode = ThemeMode.values[savedThemeIndex.clamp(0, 2)];
+      
+      // Determine if dark mode should be enabled
+      bool isDark;
+      if (themeMode == ThemeMode.system) {
+        final brightness = WidgetsBinding.instance.window.platformBrightness;
+        isDark = brightness == Brightness.dark;
+      } else {
+        isDark = themeMode == ThemeMode.dark;
+      }
+
+      state = state.copyWith(
+        themeMode: themeMode,
+        isDarkMode: isDark,
+      );
+    } catch (e) {
+      // Fallback to system theme if loading fails
+      final brightness = WidgetsBinding.instance.window.platformBrightness;
+      state = state.copyWith(
+        themeMode: ThemeMode.system,
+        isDarkMode: brightness == Brightness.dark,
+      );
+    }
   }
 
-  // Change theme mode
   void toggleTheme(bool isDark) {
+    final themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
     state = state.copyWith(
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: themeMode,
       isDarkMode: isDark,
     );
-    // Here you would save to SharedPreferences or similar
+    _sharedPref.setInt(
+      value: themeMode.index,
+      key: _sharedPref.THEME_KEY,
+    );
   }
 
-  // Switch between light/dark/system
   void setThemeMode(ThemeMode mode) {
     final isDark = mode == ThemeMode.dark || 
                   (mode == ThemeMode.system && 
@@ -62,11 +82,16 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       themeMode: mode,
       isDarkMode: isDark,
     );
-    // Here you would save to SharedPreferences or similar
+    _sharedPref.setInt(
+      value: mode.index,
+      key: _sharedPref.THEME_KEY,
+    );
   }
 }
 
-// Provider
 final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeState>((ref) {
-  return ThemeNotifier();
+  final notifier = ThemeNotifier();
+  notifier.loadTheme(); // Load saved theme when provider is created
+  return notifier;
 });
+

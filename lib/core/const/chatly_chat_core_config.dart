@@ -1,8 +1,8 @@
 import 'package:meta/meta.dart';
 
 /// Class that represents the chat config. Can be used for setting custom names
-/// for rooms and users collections. Call [FireChat.instance.setConfig]
-/// before doing anything else with [FireChat.instance] if you want to
+/// for rooms and users collections. Call [FyreChat.instance.setConfig]
+/// before doing anything else with [FyreChat.instance] if you want to
 /// change the default collection names. When using custom names don't forget
 /// to update your security rules and indexes.
 @immutable
