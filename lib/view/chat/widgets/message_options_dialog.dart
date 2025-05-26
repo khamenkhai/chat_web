@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconly/iconly.dart';
 
 Future<void> showMessageOptionsDialog(
     {required BuildContext context,
@@ -26,7 +27,7 @@ Future<void> showMessageOptionsDialog(
             const Divider(height: 20),
             isTextMessage
                 ? ListTile(
-                    leading: const Icon(Icons.edit, color: Colors.blueAccent),
+                    leading: const Icon(IconlyBold.edit, color: Colors.blueAccent),
                     title: const Text("Edit Message"),
                     onTap: () {
                       Navigator.pop(context);
@@ -35,7 +36,7 @@ Future<void> showMessageOptionsDialog(
                   )
                 : Container(),
             ListTile(
-              leading: const Icon(Icons.reply, color: Colors.green),
+              leading: const Icon(IconlyBold.send, color: Colors.green),
               title: const Text("Reply to Message"),
               onTap: () {
                 Navigator.pop(context);
@@ -43,7 +44,7 @@ Future<void> showMessageOptionsDialog(
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
+              leading: const Icon(IconlyBold.delete, color: Colors.red),
               title: const Text("Delete Message"),
               onTap: () {
                 Navigator.pop(context);

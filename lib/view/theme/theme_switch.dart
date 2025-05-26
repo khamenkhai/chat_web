@@ -1,6 +1,7 @@
 import 'package:chat_web/controller/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconly/iconly.dart';
 
 class ThemeSwitch extends ConsumerWidget {
   const ThemeSwitch({super.key});
@@ -55,7 +56,7 @@ class SunMoonThemeSelector extends ConsumerWidget {
           value: ThemeMode.light,
           child: Row(
             children: const [
-              Icon(Icons.wb_sunny, color: Colors.amber),
+              Icon(IconlyLight.info_circle, color: Colors.amber),
               SizedBox(width: 8),
               Text('Light Mode'),
             ],

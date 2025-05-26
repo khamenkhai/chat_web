@@ -51,6 +51,16 @@ class MessageBubble extends StatelessWidget {
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           // if (!isMe) _buildUserAvatar(context),
+          if (isMe)
+            Container(
+              margin: EdgeInsets.only(right: 10),
+              child: Text(
+                _formatTime(message.createdAt ?? 0),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
           _buildDeletedBox(theme),
           if (!isMe)
             Container(
@@ -102,14 +112,14 @@ class MessageBubble extends StatelessWidget {
     BuildContext context,
   ) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 1000),
       decoration: BoxDecoration(
         color: isMe
             ? messageColors.current.withValues(alpha: 0.2)
             : messageColors.otherColor,
         borderRadius: _bubbleBorderRadius(),
       ),
-      constraints: BoxConstraints(maxWidth: 250),
+      constraints: BoxConstraints(maxWidth: 300),
       child: IntrinsicWidth(
         child: Column(
           crossAxisAlignment:
@@ -269,9 +279,9 @@ class MessageBubble extends StatelessWidget {
                       ),
                     ),
                     Reaction<String>(
-                      value: '❤️',
+                      value: '💙',
                       icon: Text(
-                        '❤️',
+                        '💙',
                         style: TextStyle(fontSize: 16),
                       ),
                     ),
@@ -311,23 +321,8 @@ class MessageBubble extends StatelessWidget {
                   itemSize: const Size(25, 25),
                   child: myReaction == null
                       ? isMe
-                          ? Container(
-                              padding: EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: context.onPrimary,
-                                  boxShadow: [
-                                    BoxShadow(
-                                        offset: Offset(0, 2),
-                                        blurRadius: 10,
-                                        color: context.secondary
-                                            .withValues(alpha: 0.2))
-                                  ]),
-                              child: Icon(
-                                IconlyLight.heart,
-                                size: 16,
-                              ),
-                            )
+                          ? Container()
+                     
                           : Icon(
                               IconlyLight.heart,
                               size: 16,
@@ -362,6 +357,7 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildReplyWidget(ThemeData theme, types.Message repliedMessage) {
+    
     final messageColors = theme.extension<MessageColors>()!;
     final isReplyFromMe = repliedMessage.author.id == message.author.id;
 
@@ -371,10 +367,9 @@ class MessageBubble extends StatelessWidget {
         color:
             isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
         borderRadius: BorderRadius.only(
-            topRight: Radius.circular(12), topLeft: Radius.circular(12)
-            // topRight: isMe ? const Radius.circular(8) : Radius.circular(16),
-            // topLeft: isMe ? const Radius.circular(8) : Radius.zero,
-            ),
+          topRight: Radius.circular(12),
+          topLeft: Radius.circular(12),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,16 +414,24 @@ class MessageBubble extends StatelessWidget {
         ],
       );
     } else if (message is types.FileMessage) {
-      return SizedBox(
-        width: 100,
+      return Container(
+        constraints: BoxConstraints(
+          maxWidth: 175
+        ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.insert_drive_file, size: 16),
+            const Icon(IconlyLight.document, size: 16),
             const SizedBox(width: 4),
-            Text(
-              message.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            Container(
+              constraints: BoxConstraints(
+                maxWidth: 150
+              ),
+              child: Text(
+                message.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -590,7 +593,7 @@ class MessageBubble extends StatelessWidget {
       isSeen ? Icons.done_all : Icons.done,
       size: 16,
       color: isSeen
-          ? context.primaryColor
+          ? context.isLightTheme ? context.primaryColor : Colors.white
           : Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }

@@ -120,7 +120,7 @@ class AppTheme {
           otherColor: _lightMessageOther,
           currentText: _lightMessageCurrentText,
           otherText: _lightMessageOtherText,
-          myReplyColor: Color(0xFFE0F2FE), // Light blue-50 for your replies
+          myReplyColor: Colors.blue.shade100, // Light blue-50 for your replies
           otherReplyColor:Colors.grey.shade300
         ),
       ],

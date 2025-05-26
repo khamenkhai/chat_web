@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
+import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:chat_web/chat_service/models/message_models.dart';
 import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/edit_message_dialog.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
@@ -10,9 +12,12 @@ import 'package:chat_web/view/chat/widgets/message_input.dart';
 import 'package:chat_web/view/chat/widgets/message_options_dialog.dart';
 import 'package:chat_web/view/theme/theme_switch.dart';
 import 'package:chat_web/view/utils/util.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_pagination/firebase_pagination.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -26,18 +31,83 @@ final attachmentUploadingProvider =
 // Provider for managing reply message state
 final replyMessageProvider = StateProvider<types.Message?>((ref) => null);
 
-final editMessageProvider = StateProvider<String>((ref) => "");
-
 /// Main chat page widget that displays a chat room
 class ChatPage extends StatelessWidget {
-  const ChatPage({super.key});
-  
+  const ChatPage({super.key, required this.roomId});
+  final String roomId;
 
+  @override
+  Widget build(BuildContext context) {
+    debugPrint("=> chat page rebuilds!");
+    // Watch for room data changes
+    return Consumer(
+      builder: (context, ref, _) {
+        final Room? room = ref.read(selectedRoomProvider);
+
+        if (kDebugMode) {
+          print("=>=> room data : $room");
+        }
+
+        if (room == null) {
+          return FutureBuilder(
+            future: FyreChat.instance.getRoomById(roomId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return LoadingWidget();
+              }
+              return _chatScaffold(snapshot.data!);
+            },
+          );
+        }
+
+        return _chatScaffold(room);
+      },
+    );
+  }
+
+  Scaffold _chatScaffold(types.Room room) {
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 60,
+        title: ListTile(
+          contentPadding: EdgeInsets.all(0),
+          minVerticalPadding: 1,
+          leading: _buildAvatar(room),
+          title: Text(room.name ?? ""),
+          subtitle: FutureBuilder(
+            future: FyreChat.instance.getUserById(room.users
+                .firstWhere(
+                    (e) => e.id != FirebaseAuth.instance.currentUser?.uid)
+                .id),
+            builder: (context, snapshot) {
+              final bool isOnline = snapshot.data?.isOnline ?? false;
+              return Text(
+                isOnline
+                    ? "Active Now"
+                    : formatLastSeen(snapshot.data?.lastSeen),
+                style: TextStyle(fontSize: 12, height: 0),
+              );
+            },
+          ),
+        ),
+        leadingWidth: 0,
+        actions: [
+          ThemeSwitch(),
+          const SizedBox(width: 10),
+        ],
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: _ChatContent(room: room),
+    );
+  }
+
+  /// get image url
   Future<String> getImageUrl(String path) async {
     final ref = FirebaseStorage.instance.ref().child(path);
     return await ref.getDownloadURL();
   }
 
+  /// build avatar
   Widget _buildAvatar(types.Room room) {
     var color = Colors.transparent;
 
@@ -68,51 +138,6 @@ class ChatPage extends StatelessWidget {
               )
             : null,
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    debugPrint("=> chat page rebuilds!");
-    // Watch for room data changes
-    return Consumer(
-      builder: (context, ref, _) {
-        final room = ref.read(selectedRoomProvider.notifier).state;
-
-        return Scaffold(
-          appBar: AppBar(
-            toolbarHeight: 60,
-            title: ListTile(
-              contentPadding: EdgeInsets.all(0),
-              minVerticalPadding: 1,
-              leading: _buildAvatar(room!),
-              title: Text(room.name ?? ""),
-              subtitle: FutureBuilder(
-                future: FyreChat.instance.getUserById(room.users
-                    .firstWhere(
-                        (e) => e.id != FirebaseAuth.instance.currentUser?.uid)
-                    .id),
-                builder: (context, snapshot) {
-                  final bool isOnline = snapshot.data?.isOnline ?? false;
-                  return Text(
-                    isOnline
-                        ? "Active Now"
-                        : formatLastSeen(snapshot.data?.lastSeen),
-                    style: TextStyle(fontSize: 12, height: 0),
-                  );
-                },
-              ),
-            ),
-            leadingWidth: 0,
-            actions: [
-              ThemeSwitch(),
-              const SizedBox(width: 10),
-            ],
-            surfaceTintColor: Colors.transparent,
-          ),
-          body: _ChatContent(room: room),
-        );
-      },
     );
   }
 
@@ -180,7 +205,7 @@ class _ChatContent extends StatelessWidget {
         final replyTo = ref.watch(replyMessageProvider);
 
         return messagesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: LoadingWidget()),
           error: (error, stack) => Center(child: Text('Error: $error')),
           data: (messages) {
             debugPrint("=> message rebuilds!");
@@ -191,42 +216,28 @@ class _ChatContent extends StatelessWidget {
                   thickness: 0.5,
                 ),
                 Expanded(
-                  child: CustomScrollView(
+                  child: FirestorePagination(
+                    limit: 15, // Defaults to 10.
+                    isLive: true, // Defaults to false.
+                    viewType: ViewType.list,
                     reverse: true,
-                    slivers: [
-                      SliverPadding(
-                        padding: EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal:
-                              MediaQuery.of(context).size.width > 500 ? 25 : 0,
-                        ),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final message = messages[index];
-                              final isMe = message.author.id ==
-                                  FirebaseAuth.instance.currentUser?.uid;
+                    query: FirebaseFirestore.instance
+                        .collection('rooms')
+                        .doc(room.id)
+                        .collection("messages"),
+                    itemBuilder: (context, documentSnapshot, index) {
+                      final data = documentSnapshot;
 
-                              // _onRoomOpened(room.id, messages);
-                              if (message.author.id !=
-                                  FirebaseAuth.instance.currentUser?.uid) {
-                                FyreChat.instance
-                                    .markMessageAsSeen(room.id, message.id);
-                              }
-
-                              return _messageBubble(
-                                isMe,
-                                context,
-                                message,
-                                ref,
-                              );
-                            },
-                            childCount: messages.length,
-                          ),
-                        ),
-                      ),
-                    ],
+                      return Text("length : ${index} ${data}");
+                    },
+                    separatorBuilder: (context, index) {
+                      return const Divider(
+                        height: 5,
+                        thickness: 1,
+                      );
+                    },
                   ),
+                  // child: _customScrollView(context, messages, ref),
                 ),
                 if (replyTo != null) _replyToWidget(replyTo, ref, context),
                 if (isAttachmentUploading)
@@ -260,6 +271,50 @@ class _ChatContent extends StatelessWidget {
     );
   }
 
+  CustomScrollView _customScrollView(
+      BuildContext context, List<types.Message> messages, WidgetRef ref) {
+    return CustomScrollView(
+      reverse: true,
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.symmetric(
+            vertical: 8,
+            horizontal: MediaQuery.of(context).size.width > 1200
+                ? 32
+                : // Desktop
+                MediaQuery.of(context).size.width > 800
+                    ? 8
+                    : // Tablet
+                    0, // Mobile
+          ),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final message = messages[index];
+                final isMe =
+                    message.author.id == FirebaseAuth.instance.currentUser?.uid;
+
+                // _onRoomOpened(room.id, messages);
+                if (message.author.id !=
+                    FirebaseAuth.instance.currentUser?.uid) {
+                  FyreChat.instance.markMessageAsSeen(room.id, message.id);
+                }
+
+                return _messageBubble(
+                  isMe,
+                  context,
+                  message,
+                  ref,
+                );
+              },
+              childCount: messages.length,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Message bubble
   Align _messageBubble(
     bool isMe,
@@ -269,52 +324,47 @@ class _ChatContent extends StatelessWidget {
   ) {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        child: MessageBubble(
-          message: message,
-          isMe: isMe,
-          roomId: room.id,
-          room: room,
-          metadata: message.metadata,
-          onTap: () => _handleMessageTap(context, message),
-          onLongPress: () {
-            if (isMe) {
-              showMessageOptionsDialog(
-                context: context,
-                onEdit: () {
-                  if (message is types.TextMessage) {
-                    showEditMessageDialog(
-                      context: context,
-                      initialMessage: message.text,
-                      onSave: (p0) {
-                        FyreChat.instance.editTextMessage(
-                          roomId: room.id,
-                          messageId: message.id,
-                          newText: p0,
-                        );
-                      },
-                    );
-                  }
-                },
-                onDelete: () {
-                  FyreChat.instance.setDeleteMessage(
-                    roomId: room.id,
-                    messageId: message.id,
+      child: MessageBubble(
+        message: message,
+        isMe: isMe,
+        roomId: room.id,
+        room: room,
+        metadata: message.metadata,
+        onTap: () => _handleMessageTap(context, message),
+        onLongPress: () {
+          if (isMe) {
+            showMessageOptionsDialog(
+              context: context,
+              onEdit: () {
+                if (message is types.TextMessage) {
+                  showEditMessageDialog(
+                    context: context,
+                    initialMessage: message.text,
+                    onSave: (p0) {
+                      FyreChat.instance.editTextMessage(
+                        roomId: room.id,
+                        messageId: message.id,
+                        newText: p0,
+                      );
+                    },
                   );
-                },
-                onReply: () {
-                  ref.read(replyMessageProvider.notifier).state = message;
-                },
-                isTextMessage: message is types.TextMessage,
-              );
-            } else {
-              ref.read(replyMessageProvider.notifier).state = message;
-            }
-          },
-        ),
+                }
+              },
+              onDelete: () {
+                FyreChat.instance.setDeleteMessage(
+                  roomId: room.id,
+                  messageId: message.id,
+                );
+              },
+              onReply: () {
+                ref.read(replyMessageProvider.notifier).state = message;
+              },
+              isTextMessage: message is types.TextMessage,
+            );
+          } else {
+            ref.read(replyMessageProvider.notifier).state = message;
+          }
+        },
       ),
     );
   }

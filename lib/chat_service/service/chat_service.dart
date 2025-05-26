@@ -325,6 +325,30 @@ class FyreChat {
     );
   }
 
+  Stream<List<mm.Room>> roomStreamList({bool orderByUpdatedAt = false}) {
+    final fu = firebaseUser;
+
+    if (fu == null) return const Stream.empty();
+
+    final collection = orderByUpdatedAt
+        ? getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
+            .where('userIds', arrayContains: fu.uid)
+            .orderBy('updatedAt', descending: true)
+        : getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
+            .where('userIds', arrayContains: fu.uid);
+
+    return collection.snapshots().asyncMap((snapshot) {
+      return processRoomsQuery(
+        fu,
+        getFirebaseFirestore,
+        snapshot,
+        FireChatConst.usersCollectionName,
+      );
+    });
+  }
+
   void sendMessageReply(mm.Message partialMessage, String roomId) async {
     if (firebaseUser == null) return;
 
@@ -919,5 +943,33 @@ class FyreChat {
 
     // Return the emoji for the current user if it exists
     return reactions[userId] as String?;
+  }
+
+  /// Gets room data by room ID
+  /// Returns [Future<mm.Room?>] - The room if found, null otherwise
+  Future<mm.Room?> getRoomById(String roomId) async {
+    final fu = firebaseUser;
+    if (fu == null) return null;
+
+    try {
+      final doc = await getFirebaseFirestore
+          .collection(FireChatConst.roomsCollectionName)
+          .doc(roomId)
+          .get();
+
+      if (!doc.exists) return null;
+
+      return await processRoomDocument(
+        doc,
+        fu,
+        getFirebaseFirestore,
+        FireChatConst.usersCollectionName,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting room by ID: $e');
+      }
+      return null;
+    }
   }
 }

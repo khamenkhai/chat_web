@@ -2,6 +2,7 @@ import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
+import 'package:chat_web/core/const/size_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:chat_web/view/rooms/widgets/chat_room_tile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,6 +26,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   Future<void> _logout() async {
     setOnline(false);
     await FirebaseAuth.instance.signOut();
+    ref.read(selectedRoomProvider.notifier).setRoom(null);
   }
 
   @override
@@ -79,21 +81,54 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   Widget _buildRoomsSidebar({bool isMobile = false}) {
     return Container(
       width: isMobile ? double.infinity : 350,
+      padding: EdgeInsets.symmetric(horizontal: SizeConst.kHorizontalPadding),
       decoration: BoxDecoration(
         border: isMobile
             ? Border()
             : Border(
                 right: BorderSide(
-                  color: Colors.grey,
+                  color: Color(0xFFE2E8F0),
                   width: 0.5,
                 ),
               ),
       ),
       child: Column(
         children: [
+          const SizedBox(height: 16),
+          FutureBuilder(
+            future: FyreChat.instance
+                .getUserById(FirebaseAuth.instance.currentUser?.uid ?? ""),
+            builder: (context, snapshot) {
+              final types.User? user = snapshot.data;
+              final hasImage = user?.imageUrl != null;
+               if (snapshot.hasData) {
+                return Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor:
+                          hasImage ? Colors.transparent : Colors.blue,
+                      backgroundImage:
+                          hasImage ? NetworkImage(user?.imageUrl ?? "") : null,
+                      radius: 16,
+                      child: !hasImage
+                          ? Text(
+                              user!.fullName.toString(),
+                              style: const TextStyle(color: Colors.white),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildSearchField()),
+                  ],
+                );
+              } else {
+                return Container();
+              }
+            },
+          ),
+          const SizedBox(height: 8),
           _buildAppBar(),
-          _buildSearchField(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _buildRoomsList(),
         ],
       ),
@@ -104,38 +139,34 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     return Expanded(
       child: ref.watch(selectedRoomProvider) == null
           ? _buildEmptyState()
-          : ChatPage(),
+          : ChatPage(roomId: ""),
     );
   }
 
   Widget _buildAppBar() {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Text(
-            'Chats',
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const Spacer(),
-          PopupMenuButton<String>(
-            padding: EdgeInsets.zero,
-            onSelected: (value) {
-              if (value == 'logout') _logout();
-              if (value == 'users') context.go("/users");
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'logout', child: Text('Logout')),
-              const PopupMenuItem(value: 'Setting', child: Text('Setting')),
-              const PopupMenuItem(value: 'users', child: Text('Users')),
-            ],
-          ),
-        ],
-      ),
+    return Row(
+      children: [
+        Text(
+          'Chats',
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const Spacer(),
+        PopupMenuButton<String>(
+          padding: EdgeInsets.zero,
+          onSelected: (value) {
+            if (value == 'logout') _logout();
+            if (value == 'users') context.go("/users");
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: 'logout', child: Text('Logout')),
+            const PopupMenuItem(value: 'Setting', child: Text('Setting')),
+            const PopupMenuItem(value: 'users', child: Text('Users')),
+          ],
+        ),
+      ],
     );
   }
 
@@ -143,7 +174,6 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     return GestureDetector(
       onTap: () => context.go("/users"),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 7),
         padding: EdgeInsets.only(left: 15),
         height: 35,
         width: double.infinity,
@@ -223,7 +253,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.symmetric(
-        horizontal: 8,
+        // horizontal: 8,
         vertical: 2,
       ),
       decoration: BoxDecoration(
@@ -284,10 +314,10 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     // ||   deviceType == DeviceScreenType.tablet;
 
     if (isDesktop) {
-      ref.read(selectedRoomProvider.notifier).state = room;
+      ref.read(selectedRoomProvider.notifier).setRoom(room);
     } else {
+      ref.read(selectedRoomProvider.notifier).setRoom(room);
       context.go("/chat/${room.id}", extra: room.id);
     }
   }
 }
-

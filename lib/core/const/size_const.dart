@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class SizeConst {
+sealed class SizeConst {
   /// Horizontal padding constant
-  static const double kHorizontalPadding = 15;
+  static const double kHorizontalPadding = 16;
 
   /// Vertical spacing constant
-  static const double kVerticalSpacing = 15;
+  static const double kVerticalSpacing = 16;
 
   /// Card or container padding (Note: can't be const since it depends on dynamic values)
   static const EdgeInsets kCardPadding = EdgeInsets.symmetric(

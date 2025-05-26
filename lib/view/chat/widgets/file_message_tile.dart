@@ -15,17 +15,19 @@ class FileMessageTile extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(8),
-      margin: EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 32),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              Container(
                 // width: (message.name.length.toDouble() * 3),
+                constraints: BoxConstraints(
+                  maxWidth: 175
+                ),
                 child: Text(
                   message.name,
                   style: theme.textTheme.bodyMedium,
@@ -45,20 +47,20 @@ class FileMessageTile extends StatelessWidget {
     );
   }
 
-  IconData _getFileIcon(String? mimeType) {
-    if (mimeType == null) return IconlyLight.document;
+IconData _getFileIcon(String? mimeType) {
+  if (mimeType == null) return IconlyLight.document;
 
-    if (mimeType.contains('pdf')) return Icons.picture_as_pdf;
-    if (mimeType.contains('word')) return Icons.description;
-    if (mimeType.contains('excel')) return Icons.table_chart;
-    if (mimeType.contains('powerpoint')) return Icons.slideshow;
-    if (mimeType.contains('zip')) return Icons.archive;
-    if (mimeType.contains('image')) return Icons.image;
-    if (mimeType.contains('audio')) return Icons.audiotrack;
-    if (mimeType.contains('video')) return Icons.videocam;
+  if (mimeType.contains('pdf')) return IconlyLight.paper;
+  if (mimeType.contains('word')) return IconlyLight.document;
+  if (mimeType.contains('excel')) return IconlyLight.chart;
+  if (mimeType.contains('powerpoint')) return IconlyLight.document;
+  if (mimeType.contains('zip')) return IconlyLight.folder;
+  if (mimeType.contains('image')) return IconlyLight.image;
+  if (mimeType.contains('audio')) return IconlyLight.voice;
+  if (mimeType.contains('video')) return IconlyLight.video;
 
-    return IconlyLight.document;
-  }
+  return IconlyLight.document;
+}
 
   String _formatFileSize(num size) {
     if (size < 1024) return '$size B';

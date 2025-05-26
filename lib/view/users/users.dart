@@ -1,4 +1,6 @@
 import 'package:chat_web/controller/search_user_provider.dart';
+import 'package:chat_web/core/component/loading_widget.dart';
+import 'package:chat_web/core/const/size_const.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/service/chat_service.dart';
@@ -104,7 +106,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   ),
                   filled: true,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: SizeConst.kHorizontalPadding,
                     vertical: 12,
                   ),
                 ),
@@ -220,7 +222,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 child: SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: LoadingWidget(),
                 ),
               ),
               error: (e, _) => Center(
@@ -228,7 +230,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.error_outline_rounded,
+                      IconlyLight.danger, 
                       size: 48,
                       color: Colors.red[400],
                     ),

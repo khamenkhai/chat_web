@@ -13,6 +13,6 @@ final roomsStreamProvider = StreamProvider.autoDispose<List<types.Room>>((ref) {
   return FyreChat.instance.rooms();
 });
 // First, create a stream provider for the rooms
-final roomsFutureProvider = FutureProvider.autoDispose<List<types.Room>>((ref) {
-  return FyreChat.instance.roomList();
+final roomsFutureProvider = StreamProvider.autoDispose<List<types.Room>>((ref) {
+  return FyreChat.instance.rooms();
 });
