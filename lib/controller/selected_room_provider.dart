@@ -18,13 +18,11 @@ class PersistentSelectedRoomNotifier extends StateNotifier<types.Room?> {
   }
 
   Future<void> _loadPersistedData() async {
-    print("=>=> loading data!");
     try {
       final jsonString = await _sharedPref.getString(key: 'selectedRoom');
       if (jsonString.isNotEmpty) {
         final room = types.Room.fromJson(jsonDecode(jsonString));
         state = room;
-          print("=>=> data ${room}!");
       }
       if (kDebugMode) {
         print("selected room : $state");

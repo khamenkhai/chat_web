@@ -888,33 +888,6 @@ class FyreChat {
     await messageRef.update({'reactions': reactions});
   }
 
-  Future<String?> getMyReaction({
-    required String roomId,
-    required String messageId,
-  }) async {
-    if (firebaseUser == null) return null;
-
-    final String userId = firebaseUser!.uid;
-
-    final messageRef = FirebaseFirestore.instance
-        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
-        .doc(messageId);
-
-    final snapshot = await messageRef.get();
-
-    if (!snapshot.exists) {
-      if (kDebugMode) {
-        print('Message does not exist.');
-      }
-      return null;
-    }
-
-    final data = snapshot.data();
-    final reactions = Map<String, dynamic>.from(data?['reactions'] ?? {});
-
-    // Return the emoji for the current user if it exists
-    return reactions[userId] as String?;
-  }
 
   Future<String?> getOtherReaction({
     required String roomId,

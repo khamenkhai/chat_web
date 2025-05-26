@@ -12,10 +12,8 @@ import 'package:chat_web/view/chat/widgets/message_input.dart';
 import 'package:chat_web/view/chat/widgets/message_options_dialog.dart';
 import 'package:chat_web/view/theme/theme_switch.dart';
 import 'package:chat_web/view/utils/util.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_pagination/firebase_pagination.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -216,28 +214,7 @@ class _ChatContent extends StatelessWidget {
                   thickness: 0.5,
                 ),
                 Expanded(
-                  child: FirestorePagination(
-                    limit: 15, // Defaults to 10.
-                    isLive: true, // Defaults to false.
-                    viewType: ViewType.list,
-                    reverse: true,
-                    query: FirebaseFirestore.instance
-                        .collection('rooms')
-                        .doc(room.id)
-                        .collection("messages"),
-                    itemBuilder: (context, documentSnapshot, index) {
-                      final data = documentSnapshot;
-
-                      return Text("length : ${index} ${data}");
-                    },
-                    separatorBuilder: (context, index) {
-                      return const Divider(
-                        height: 5,
-                        thickness: 1,
-                      );
-                    },
-                  ),
-                  // child: _customScrollView(context, messages, ref),
+                  child:  _customScrollView(context, messages, ref),
                 ),
                 if (replyTo != null) _replyToWidget(replyTo, ref, context),
                 if (isAttachmentUploading)

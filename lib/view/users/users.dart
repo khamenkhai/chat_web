@@ -1,4 +1,5 @@
 import 'package:chat_web/controller/search_user_provider.dart';
+import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/const/size_const.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +63,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   void _handlePressed(types.User otherUser, BuildContext context) async {
     final room = await FyreChat.instance.createRoom(otherUser);
     if (!context.mounted) return;
+    ref.read(selectedRoomProvider.notifier).setRoom(room);
     context.go("/chat/${room.id}", extra: room.id);
   }
 
@@ -154,7 +156,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     height: 1,
                     thickness: 1,
                     color: isDark
-                        ? Colors.grey[800]!.withValues(alpha:  0.5)
+                        ? Colors.grey[800]!.withValues(alpha: 0.5)
                         : Colors.grey[200],
                   ),
                   itemBuilder: (context, index) {
@@ -230,7 +232,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      IconlyLight.danger, 
+                      IconlyLight.danger,
                       size: 48,
                       color: Colors.red[400],
                     ),

@@ -235,10 +235,16 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  String? getMyReaction(Map<String, String>? reactions, String myUserId) {
+    return reactions?[myUserId];
+  }
+
   Widget _buildLikeButton({
     required BuildContext context,
     required bool isMe,
   }) {
+   
+    final String? myReaction = getMyReaction(message.reactions, FirebaseAuth.instance.currentUser?.uid ?? "");
     return Container(
       margin: EdgeInsets.only(
         left: isMe ? 0 : 10,
@@ -250,86 +256,74 @@ class MessageBubble extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(1),
             decoration: BoxDecoration(),
-            child: FutureBuilder(
-              future: FyreChat.instance.getMyReaction(
-                roomId: roomId,
-                messageId: message.id,
-              ),
-              builder: (context, snapshot) {
-                final String? myReaction = snapshot.data;
-
-                // return Text("${myReaction}");
-                return ReactionButton<String>(
-                  toggle: false,
-                  direction: ReactionsBoxAlignment.rtl,
-                  onReactionChanged: (Reaction<String>? reaction) {
-                    // Handle selected reaction
-                    FyreChat.instance.reactToMessage(
-                      roomId: roomId,
-                      messageId: message.id,
-                      emoji: reaction?.value ?? "",
-                    );
-                  },
-                  reactions: <Reaction<String>>[
-                    Reaction<String>(
-                      value: '👍',
-                      icon: Text(
-                        '👍',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    Reaction<String>(
-                      value: '💙',
-                      icon: Text(
-                        '💙',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    Reaction<String>(
-                      value: '😂',
-                      icon: Text(
-                        '😂',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    Reaction<String>(
-                      value: '😮',
-                      icon: Text(
-                        '😮',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    Reaction<String>(
-                      value: '😢',
-                      icon: Text(
-                        '😢',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    Reaction<String>(
-                      value: '😡',
-                      icon: Text(
-                        '😡',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ],
-                  boxElevation: 1,
-                  boxColor: Colors.white,
-                  boxRadius: 30,
-                  itemsSpacing: 12,
-                  itemSize: const Size(25, 25),
-                  child: myReaction == null
-                      ? isMe
-                          ? Container()
-                     
-                          : Icon(
-                              IconlyLight.heart,
-                              size: 16,
-                            )
-                      : Text(myReaction),
+            child: ReactionButton<String>(
+              toggle: false,
+              direction: ReactionsBoxAlignment.rtl,
+              onReactionChanged: (Reaction<String>? reaction) {
+                // Handle selected reaction
+                FyreChat.instance.reactToMessage(
+                  roomId: roomId,
+                  messageId: message.id,
+                  emoji: reaction?.value ?? "",
                 );
               },
+              reactions: <Reaction<String>>[
+                Reaction<String>(
+                  value: '👍',
+                  icon: Text(
+                    '👍',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+                Reaction<String>(
+                  value: '💙',
+                  icon: Text(
+                    '💙',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+                Reaction<String>(
+                  value: '😂',
+                  icon: Text(
+                    '😂',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+                Reaction<String>(
+                  value: '😮',
+                  icon: Text(
+                    '😮',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+                Reaction<String>(
+                  value: '😢',
+                  icon: Text(
+                    '😢',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+                Reaction<String>(
+                  value: '😡',
+                  icon: Text(
+                    '😡',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+              boxElevation: 1,
+              boxColor: Colors.white,
+              boxRadius: 30,
+              itemsSpacing: 12,
+              itemSize: const Size(25, 25),
+              child: myReaction == null
+                  ? isMe
+                      ? Container()
+                      : Icon(
+                          IconlyLight.heart,
+                          size: 16,
+                        )
+                  : Text(myReaction),
             ),
           ),
           if (isMe)
@@ -357,7 +351,6 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildReplyWidget(ThemeData theme, types.Message repliedMessage) {
-    
     final messageColors = theme.extension<MessageColors>()!;
     final isReplyFromMe = repliedMessage.author.id == message.author.id;
 
@@ -415,18 +408,14 @@ class MessageBubble extends StatelessWidget {
       );
     } else if (message is types.FileMessage) {
       return Container(
-        constraints: BoxConstraints(
-          maxWidth: 175
-        ),
+        constraints: BoxConstraints(maxWidth: 175),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(IconlyLight.document, size: 16),
             const SizedBox(width: 4),
             Container(
-              constraints: BoxConstraints(
-                maxWidth: 150
-              ),
+              constraints: BoxConstraints(maxWidth: 150),
               child: Text(
                 message.name,
                 maxLines: 1,
@@ -593,7 +582,9 @@ class MessageBubble extends StatelessWidget {
       isSeen ? Icons.done_all : Icons.done,
       size: 16,
       color: isSeen
-          ? context.isLightTheme ? context.primaryColor : Colors.white
+          ? context.isLightTheme
+              ? context.primaryColor
+              : Colors.white
           : Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
