@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
@@ -166,16 +167,76 @@ class ChatPage extends StatelessWidget {
   }
 }
 
-class _ChatContent extends StatelessWidget {
+class _ChatContent extends StatefulWidget {
   const _ChatContent({required this.room});
   final types.Room room;
+
+  @override
+  State<_ChatContent> createState() => _ChatContentState();
+}
+
+class _ChatContentState extends State<_ChatContent> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  List<types.Message> _previousMessages = [];
+  bool _isMounted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isMounted = true;
+    _loadSound();
+  }
+
+  @override
+  void dispose() {
+    _isMounted = false;
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSound() async {
+    await _audioPlayer.setSourceUrl('assets/sounds/message_sound.mp3');
+  }
+
+  Future<void> _playNotificationSound() async {
+    if (!_isMounted) return;
+
+    try {
+      await _audioPlayer.setVolume(0.5); // Adjust volume as needed
+      await _audioPlayer.resume(); // Plays the loaded sound
+    } catch (e) {
+      debugPrint('Error playing sound: $e');
+    }
+  }
+
+  void _checkForNewMessages(List<types.Message> currentMessages) {
+    if (_previousMessages.isEmpty) {
+      _previousMessages = currentMessages;
+      return;
+    }
+
+    // Find new messages that weren't in the previous list
+    final newMessages = currentMessages
+        .where(
+          (message) =>
+              !_previousMessages.any((m) => m.id == message.id) &&
+              message.author.id != FirebaseAuth.instance.currentUser?.uid,
+        )
+        .toList();
+
+    if (newMessages.isNotEmpty) {
+      _playNotificationSound();
+    }
+
+    _previousMessages = currentMessages;
+  }
 
   Future<void> _handleMessageTap(
       BuildContext context, types.Message message) async {
     if (message is types.FileMessage && message.uri.startsWith('http')) {
       try {
         final updated = message.copyWith(isLoading: true);
-        FyreChat.instance.updateMessage(updated, room.id);
+        FyreChat.instance.updateMessage(updated, widget.room.id);
 
         final res = await http.get(Uri.parse(message.uri));
         final dir = (await getApplicationDocumentsDirectory()).path;
@@ -186,7 +247,7 @@ class _ChatContent extends StatelessWidget {
         }
       } finally {
         final updated = message.copyWith(isLoading: false);
-        FyreChat.instance.updateMessage(updated, room.id);
+        FyreChat.instance.updateMessage(updated, widget.room.id);
       }
     }
   }
@@ -197,7 +258,7 @@ class _ChatContent extends StatelessWidget {
 
     return Consumer(
       builder: (context, ref, child) {
-        final messagesAsync = ref.watch(messagesStreamProvider(room));
+        final messagesAsync = ref.watch(messagesStreamProvider(widget.room));
         final isAttachmentUploading = ref.watch(attachmentUploadingProvider);
 
         final replyTo = ref.watch(replyMessageProvider);
@@ -206,6 +267,11 @@ class _ChatContent extends StatelessWidget {
           loading: () => const Center(child: LoadingWidget()),
           error: (error, stack) => Center(child: Text('Error: $error')),
           data: (messages) {
+            // Check for new messages and play sound if needed
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _checkForNewMessages(messages);
+            });
+
             debugPrint("=> message rebuilds!");
             return Column(
               children: [
@@ -214,7 +280,7 @@ class _ChatContent extends StatelessWidget {
                   thickness: 0.5,
                 ),
                 Expanded(
-                  child:  _customScrollView(context, messages, ref),
+                  child: _customScrollView(context, messages, ref),
                 ),
                 if (replyTo != null) _replyToWidget(replyTo, ref, context),
                 if (isAttachmentUploading)
@@ -228,12 +294,12 @@ class _ChatContent extends StatelessWidget {
                       FyreChat.instance.sendReply(
                         originalMessage: reply,
                         partialReply: types.PartialText(text: text),
-                        roomId: room.id,
+                        roomId: widget.room.id,
                       );
                     } else {
                       FyreChat.instance.sendMessage(
                         types.PartialText(text: text),
-                        room.id,
+                        widget.room.id,
                       );
                     }
 
@@ -274,7 +340,8 @@ class _ChatContent extends StatelessWidget {
                 // _onRoomOpened(room.id, messages);
                 if (message.author.id !=
                     FirebaseAuth.instance.currentUser?.uid) {
-                  FyreChat.instance.markMessageAsSeen(room.id, message.id);
+                  FyreChat.instance
+                      .markMessageAsSeen(widget.room.id, message.id);
                 }
 
                 return _messageBubble(
@@ -304,8 +371,8 @@ class _ChatContent extends StatelessWidget {
       child: MessageBubble(
         message: message,
         isMe: isMe,
-        roomId: room.id,
-        room: room,
+        roomId: widget.room.id,
+        room: widget.room,
         metadata: message.metadata,
         onTap: () => _handleMessageTap(context, message),
         onLongPress: () {
@@ -319,7 +386,7 @@ class _ChatContent extends StatelessWidget {
                     initialMessage: message.text,
                     onSave: (p0) {
                       FyreChat.instance.editTextMessage(
-                        roomId: room.id,
+                        roomId: widget.room.id,
                         messageId: message.id,
                         newText: p0,
                       );
@@ -329,7 +396,7 @@ class _ChatContent extends StatelessWidget {
               },
               onDelete: () {
                 FyreChat.instance.setDeleteMessage(
-                  roomId: room.id,
+                  roomId: widget.room.id,
                   messageId: message.id,
                 );
               },

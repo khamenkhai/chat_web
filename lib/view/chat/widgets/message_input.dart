@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
@@ -77,22 +78,43 @@ class MessageInput extends ConsumerStatefulWidget {
 class _MessageInputState extends ConsumerState<MessageInput> {
   final _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(() {
-      if (!_focusNode.hasFocus && ref.read(messageInputStateProvider).emojiShowing) {
+      if (!_focusNode.hasFocus &&
+          ref.read(messageInputStateProvider).emojiShowing) {
         ref.read(messageInputStateProvider.notifier).hideEmojiKeyboard();
       }
     });
+    _loadSound();
   }
 
   @override
   void dispose() {
     _textController.dispose();
     _focusNode.dispose();
+    _audioPlayer.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSound() async {
+    try {
+      await _audioPlayer.setSourceUrl('assets/sounds/message_send.mp3');
+    } catch (e) {
+      debugPrint('Error loading sound: $e');
+    }
+  }
+
+  Future<void> _playSendSound() async {
+    try {
+      await _audioPlayer.setVolume(0.3); // Lower volume for send sound
+      await _audioPlayer.resume();
+    } catch (e) {
+      debugPrint('Error playing send sound: $e');
+    }
   }
 
   void _onEmojiSelected(category, Emoji emoji) {
@@ -100,7 +122,9 @@ class _MessageInputState extends ConsumerState<MessageInput> {
       ..text += emoji.emoji
       ..selection = TextSelection.fromPosition(
           TextPosition(offset: _textController.text.length));
-    ref.read(messageInputStateProvider.notifier).updateText(_textController.text);
+    ref
+        .read(messageInputStateProvider.notifier)
+        .updateText(_textController.text);
   }
 
   void _onBackspacePressed() {
@@ -108,13 +132,15 @@ class _MessageInputState extends ConsumerState<MessageInput> {
       ..text = _textController.text.characters.skipLast(1).toString()
       ..selection = TextSelection.fromPosition(
           TextPosition(offset: _textController.text.length));
-    ref.read(messageInputStateProvider.notifier).updateText(_textController.text);
+    ref
+        .read(messageInputStateProvider.notifier)
+        .updateText(_textController.text);
   }
 
   void _toggleEmojiKeyboard() {
     final currentState = ref.read(messageInputStateProvider);
     ref.read(messageInputStateProvider.notifier).toggleEmojiKeyboard();
-    
+
     if (currentState.emojiShowing) {
       _focusNode.requestFocus();
     } else {
@@ -206,8 +232,8 @@ class _MessageInputState extends ConsumerState<MessageInput> {
           padding: const EdgeInsets.all(8.0),
           child: Consumer(
             builder: (context, ref, child) {
-              
-              final isAttachmentUploading = ref.watch(attachmentUploadingProvider);
+              final isAttachmentUploading =
+                  ref.watch(attachmentUploadingProvider);
               final isImageUploading = ref.watch(imageUploadingProvider);
 
               return Row(
@@ -239,7 +265,9 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                       controller: _textController,
                       focusNode: _focusNode,
                       onChanged: (value) {
-                        ref.read(messageInputStateProvider.notifier).updateText(value);
+                        ref
+                            .read(messageInputStateProvider.notifier)
+                            .updateText(value);
                       },
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
@@ -274,7 +302,9 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                       ),
                       onTap: () {
                         if (messageInputState.emojiShowing) {
-                          ref.read(messageInputStateProvider.notifier).hideEmojiKeyboard();
+                          ref
+                              .read(messageInputStateProvider.notifier)
+                              .hideEmojiKeyboard();
                         }
                       },
                     ),
@@ -288,13 +318,26 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                     ),
                     onPressed: messageInputState.text.trim().isEmpty
                         ? null
-                        : () {
+                        : () async {
                             widget.onSend(messageInputState.text);
+                            await _playSendSound();
                             _textController.clear();
                             ref.read(messageInputStateProvider.notifier)
                               ..resetText()
                               ..hideEmojiKeyboard();
+
+                            // Play the send sound
+                            
                           },
+                    // onPressed: messageInputState.text.trim().isEmpty
+                    //     ? null
+                    //     : () {
+                    //         widget.onSend(messageInputState.text);
+                    //         _textController.clear();
+                    //         ref.read(messageInputStateProvider.notifier)
+                    //           ..resetText()
+                    //           ..hideEmojiKeyboard();
+                    //       },
                   ),
                 ],
               );
