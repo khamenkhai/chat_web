@@ -20,6 +20,7 @@
     }
   },
   "hosting": {
+    "site": "fyrechat-example",
     "public": "build/web",
     "ignore": [
       "firebase.json",

@@ -1,16 +1,18 @@
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
+import 'package:chat_web/view/chat/widgets/bubble_components/deleted_message_tile.dart';
+import 'package:chat_web/view/chat/widgets/bubble_components/image_message_tile.dart';
+import 'package:chat_web/view/common/user_avatar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_reaction_button/flutter_reaction_button.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/service/chat_service.dart';
-import 'package:chat_web/view/chat/widgets/file_message_tile.dart';
+import 'package:chat_web/view/chat/widgets/bubble_components/file_message_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 import 'package:iconly/iconly.dart';
-import 'package:photo_view/photo_view.dart';
 
 class MessageBubble extends StatelessWidget {
   final types.Message message;
@@ -20,6 +22,7 @@ class MessageBubble extends StatelessWidget {
   final String roomId;
   final types.Room room;
   final Map<String, dynamic>? metadata;
+  final bool showTail;
 
   const MessageBubble({
     super.key,
@@ -29,52 +32,19 @@ class MessageBubble extends StatelessWidget {
     required this.onLongPress,
     required this.roomId,
     required this.room,
+    required this.showTail,
     this.metadata,
   });
 
   @override
   Widget build(BuildContext context) {
     if (message.isDeleted ?? false) {
-      return _buildDeletedMessage(context);
+      return DeletedMessageTile(
+        isMe: isMe,
+        createdAt: message.createdAt,
+      );
     }
     return _buildMessageBubble(context);
-  }
-
-  Widget _buildDeletedMessage(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: _messagePadding,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          // if (!isMe) _buildUserAvatar(context),
-          if (isMe)
-            Container(
-              margin: EdgeInsets.only(right: 10),
-              child: Text(
-                _formatTime(message.createdAt ?? 0),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
-          _buildDeletedBox(theme),
-          if (!isMe)
-            Container(
-              margin: EdgeInsets.only(left: 10),
-              child: Text(
-                _formatTime(message.createdAt ?? 0),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 
   Widget _buildMessageBubble(BuildContext context) {
@@ -82,14 +52,27 @@ class MessageBubble extends StatelessWidget {
     final messageColors = theme.extension<MessageColors>()!;
 
     return Padding(
-      padding: _messagePadding,
+      padding: messagePadding,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment:
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          // if (!isMe) _buildUserAvatar(context),
+          /// other user avatar
+          (!isMe && showTail)
+              ? SizedBox(
+                  width: 40,
+                  child: Row(
+                    children: [
+                      UserAvatar(
+                        room: room,
+                        size: 30,
+                      ),
+                    ],
+                  ),
+                )
+              : Container(width: 40),
           GestureDetector(
             onTap: () => _handleMessageTap(context),
             onLongPress: onLongPress,
@@ -101,6 +84,23 @@ class MessageBubble extends StatelessWidget {
               ],
             ),
           ),
+
+          /// other user avatar
+          (isMe && showTail)
+              ? SizedBox(
+                  width: 40,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 10),
+                      UserAvatar(
+                        room: room,
+                        image: room.users.where((e)=> e.id == FirebaseAuth.instance.currentUser!.uid).first.imageUrl,
+                        size: 30,
+                      ),
+                    ],
+                  ),
+                )
+              : Container(width: 40),
         ],
       ),
     );
@@ -117,7 +117,14 @@ class MessageBubble extends StatelessWidget {
         color: isMe
             ? messageColors.current.withValues(alpha: 0.2)
             : messageColors.otherColor,
-        borderRadius: _bubbleBorderRadius(),
+        borderRadius: showTail
+            ? BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+                topLeft: isMe ? Radius.circular(12) : Radius.circular(0),
+                topRight: !isMe ? Radius.circular(12) : Radius.circular(0),
+              )
+            : _bubbleBorderRadius(),
       ),
       constraints: BoxConstraints(maxWidth: 300),
       child: IntrinsicWidth(
@@ -135,40 +142,6 @@ class MessageBubble extends StatelessWidget {
             const SizedBox(height: 5),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDeletedBox(ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 1),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.do_not_disturb_on_rounded,
-            size: 18,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            "Message Deleted".tr(),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-              fontStyle: FontStyle.italic,
-              fontSize: 12,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -208,33 +181,6 @@ class MessageBubble extends StatelessWidget {
     }
   }
 
-  // ignore: unused_element
-  Widget _buildUserAvatar(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: CircleAvatar(
-        radius: 16,
-        backgroundColor: colorScheme.primaryContainer,
-        backgroundImage: message.author.metadata?['avatarUrl'] != null
-            ? NetworkImage(message.author.metadata!['avatarUrl'] as String)
-            : null,
-        child: message.author.metadata?['avatarUrl'] == null
-            ? Text(
-                message.author.firstName?.isNotEmpty == true
-                    ? message.author.firstName![0].toUpperCase()
-                    : 'U',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
-                ),
-              )
-            : null,
-      ),
-    );
-  }
-
   String? getMyReaction(Map<String, String>? reactions, String myUserId) {
     return reactions?[myUserId];
   }
@@ -243,8 +189,8 @@ class MessageBubble extends StatelessWidget {
     required BuildContext context,
     required bool isMe,
   }) {
-   
-    final String? myReaction = getMyReaction(message.reactions, FirebaseAuth.instance.currentUser?.uid ?? "");
+    final String? myReaction = getMyReaction(
+        message.reactions, FirebaseAuth.instance.currentUser?.uid ?? "");
     return Container(
       margin: EdgeInsets.only(
         left: isMe ? 0 : 10,
@@ -447,7 +393,7 @@ class MessageBubble extends StatelessWidget {
     if (message is types.TextMessage) {
       return _buildTextMessage(theme);
     } else if (message is types.ImageMessage) {
-      return _buildImageMessage(theme, context);
+      return ImageMessageTile(message: message);
     } else if (message is types.FileMessage) {
       return FileMessageTile(message: message as types.FileMessage);
     }
@@ -462,80 +408,6 @@ class MessageBubble extends StatelessWidget {
         style: theme.textTheme.bodyLarge?.copyWith(
           color: theme.colorScheme.onSurface,
           fontSize: 14,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageMessage(ThemeData theme, BuildContext context) {
-    final colorScheme = theme.colorScheme;
-    final imageUrl = (message as types.ImageMessage).uri;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Scaffold(
-              // backgroundColor: Colors.black,
-              appBar: AppBar(),
-              body: Center(
-                child: PhotoView(
-                  imageProvider: NetworkImage(imageUrl),
-                  backgroundDecoration:
-                      const BoxDecoration(color: Colors.black),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 5),
-        child: ClipRRect(
-          borderRadius: _bubbleBorderRadius(),
-          child: Image.network(
-            imageUrl,
-            width: 220,
-            height: 220,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return _buildImageLoadingIndicator(progress);
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return _buildImageErrorPlaceholder(colorScheme);
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageLoadingIndicator(ImageChunkEvent progress) {
-    return SizedBox(
-      width: 220,
-      height: 220,
-      child: Center(
-        child: CircularProgressIndicator(
-          value: progress.expectedTotalBytes != null
-              ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
-              : null,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageErrorPlaceholder(ColorScheme colorScheme) {
-    return Container(
-      width: 220,
-      height: 220,
-      color: colorScheme.surfaceContainerHighest,
-      child: Center(
-        child: Icon(
-          IconlyLight.image,
-          size: 48,
-          color: colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -595,8 +467,6 @@ class MessageBubble extends StatelessWidget {
       bottomRight: const Radius.circular(12),
       topLeft: Radius.circular(12),
       topRight: Radius.circular(12),
-      // topLeft: Radius.circular(isMe ? 16 : 4),
-      // topRight: Radius.circular(isMe ? 4 : 16),
     );
   }
 
@@ -605,6 +475,6 @@ class MessageBubble extends StatelessWidget {
     return DateFormat('hh:mm a').format(date);
   }
 
-  static const EdgeInsets _messagePadding =
+  static const EdgeInsets messagePadding =
       EdgeInsets.symmetric(horizontal: 8, vertical: 2);
 }

@@ -5,11 +5,11 @@ import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/const/size_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:chat_web/view/rooms/widgets/chat_room_tile.dart';
+import 'package:chat_web/view/rooms/widgets/rooms_empty.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconly/iconly.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import '../chat/chat.dart';
@@ -101,7 +101,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
             builder: (context, snapshot) {
               final types.User? user = snapshot.data;
               final hasImage = user?.imageUrl != null;
-               if (snapshot.hasData) {
+              if (snapshot.hasData) {
                 return Row(
                   children: [
                     CircleAvatar(
@@ -138,7 +138,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   Widget _buildChatArea() {
     return Expanded(
       child: ref.watch(selectedRoomProvider) == null
-          ? _buildEmptyState()
+          ? RoomsEmpty()
           : ChatPage(roomId: ""),
     );
   }
@@ -203,8 +203,12 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
       child: roomsAsync.when(
         loading: () => LoadingWidget(),
         error: (error, stack) => _buildErrorState(),
-        data: (rooms) =>
-            rooms.isEmpty ? _buildEmptyListState() : _buildRoomList(rooms),
+        data: (rooms) {
+          if (rooms.isEmpty) {
+            ref.read(selectedRoomProvider.notifier).setRoom(null);
+          }
+          return rooms.isEmpty ? _buildEmptyListState() : _buildRoomList(rooms);
+        },
       ),
     );
   }
@@ -240,71 +244,19 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
       itemCount: sortedRooms.length,
       itemBuilder: (context, index) {
         final room = sortedRooms[index];
-        return _buildRoomItem(room);
+        final isSelected = ref.watch(selectedRoomProvider) == room;
+        final isDesktop = getDeviceType(MediaQuery.of(context).size) ==
+            DeviceScreenType.desktop;
+
+        return ChatRoomTile(
+          isDesktop: isDesktop,
+          isSelected: isSelected,
+          room: room,
+          onTap: (p0) {
+            _onRoomTap(room);
+          },
+        );
       },
-    );
-  }
-
-  Widget _buildRoomItem(types.Room room) {
-    final isSelected = ref.watch(selectedRoomProvider) == room;
-    final isDesktop =
-        getDeviceType(MediaQuery.of(context).size) == DeviceScreenType.desktop;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(
-        // horizontal: 8,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: isSelected && isDesktop
-            ? Theme.of(context).colorScheme.primaryContainer.withAlpha(38)
-            : Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withAlpha(13),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ChatRoomTile(
-        room: room,
-        onTap: (p0) {
-          _onRoomTap(room);
-        },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              IconlyBold.chat,
-              size: 56,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'No room selected',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Select a room from the sidebar to start chatting',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
