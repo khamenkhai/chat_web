@@ -12,7 +12,9 @@ PartialImage _$PartialImageFromJson(Map<String, dynamic> json) => PartialImage(
       name: json['name'] as String,
       repliedMessage: json['repliedMessage'] == null
           ? null
-          : Message.fromJson(json['repliedMessage'] as Map<String, dynamic>),
+          : Message.fromJson(
+              Map<String, dynamic>.from(json['repliedMessage'] as Map),
+            ),
       size: json['size'] as num,
       uri: json['uri'] as String,
       width: (json['width'] as num?)?.toDouble(),

@@ -13,7 +13,9 @@ PartialText _$PartialTextFromJson(Map<String, dynamic> json) => PartialText(
           : PreviewData.fromJson(json['previewData'] as Map<String, dynamic>),
       repliedMessage: json['repliedMessage'] == null
           ? null
-          : Message.fromJson(json['repliedMessage'] as Map<String, dynamic>),
+          : Message.fromJson(
+              Map<String, dynamic>.from(json['repliedMessage'] as Map),
+            ),
       text: json['text'] as String,
     );
 

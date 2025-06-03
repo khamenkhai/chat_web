@@ -13,7 +13,9 @@ PartialAudio _$PartialAudioFromJson(Map<String, dynamic> json) => PartialAudio(
       name: json['name'] as String,
       repliedMessage: json['repliedMessage'] == null
           ? null
-          : Message.fromJson(json['repliedMessage'] as Map<String, dynamic>),
+          : Message.fromJson(
+              Map<String, dynamic>.from(json['repliedMessage'] as Map),
+            ),
       size: json['size'] as num,
       uri: json['uri'] as String,
       waveForm: (json['waveForm'] as List<dynamic>?)

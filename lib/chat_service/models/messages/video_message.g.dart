@@ -16,7 +16,9 @@ VideoMessage _$VideoMessageFromJson(Map<String, dynamic> json) => VideoMessage(
       remoteId: json['remoteId'] as String?,
       repliedMessage: json['repliedMessage'] == null
           ? null
-          : Message.fromJson(json['repliedMessage'] as Map<String, dynamic>),
+          : Message.fromJson(
+              Map<String, dynamic>.from(json['repliedMessage'] as Map),
+            ),
       roomId: json['roomId'] as String?,
       showStatus: json['showStatus'] as bool?,
       size: json['size'] as num,
