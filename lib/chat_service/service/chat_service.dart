@@ -658,10 +658,10 @@ class FyreChat {
         partialText: partialReply,
       ).copyWith(
         repliedMessage: originalMessage,
-        metadata: {
-          ...partialReply.metadata ?? {},
-          // 'replyTo': originalMessage.toJson(),
-        },
+        // metadata: {
+        //   ...partialReply.metadata ?? {},
+        //   // 'replyTo': originalMessage.toJson(),
+        // },
       );
     } else if (partialReply is mm.PartialImage) {
       replyMessage = mm.ImageMessage.fromPartial(

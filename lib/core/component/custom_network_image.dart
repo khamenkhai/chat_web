@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:flutter/material.dart';
 
-class CustomNetworkImage extends StatelessWidget {
+class CachedImage extends StatelessWidget {
   final String imageUrl;
   final double? width;
   final double? height;
@@ -10,7 +10,7 @@ class CustomNetworkImage extends StatelessWidget {
   final Widget? placeholder;
   final Widget? errorWidget;
 
-  const CustomNetworkImage({
+  const CachedImage({
     super.key,
     required this.imageUrl,
     this.width,

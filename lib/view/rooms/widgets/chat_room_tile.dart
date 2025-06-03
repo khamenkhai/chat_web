@@ -84,7 +84,10 @@ class ChatRoomTile extends StatelessWidget {
                                   ?.copyWith(fontWeight: FontWeight.w600),
                             ),
                             Text(
-                              _formatTimeAgo(snapshot.data?.updatedAt ?? 0),
+                              displayText == "No messages"
+                                  ? ""
+                                  : _formatTimeAgo(
+                                      snapshot.data?.updatedAt ?? 0),
                               style: Theme.of(context)
                                   .textTheme
                                   .labelSmall
@@ -151,7 +154,7 @@ class ChatRoomTile extends StatelessWidget {
         height: 40,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(100),
-          child: CustomNetworkImage(
+          child: CachedImage(
             imageUrl: room.imageUrl ?? "",
             errorWidget: Center(
               child: Text(

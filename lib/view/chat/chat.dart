@@ -320,7 +320,7 @@ class _ChatContentState extends State<_ChatContent> {
           padding: EdgeInsets.symmetric(
             vertical: 8,
             horizontal: MediaQuery.of(context).size.width > 1200
-                ? 32
+                ? 100
                 : MediaQuery.of(context).size.width > 800
                     ? 8
                     : 0,

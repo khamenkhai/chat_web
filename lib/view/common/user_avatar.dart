@@ -6,12 +6,12 @@ import 'package:photo_view/photo_view.dart';
 class UserAvatar extends StatelessWidget {
   const UserAvatar({
     super.key,
-    required this.room,
+    this.room,
     this.size,
     this.image,
   });
 
-  final types.Room room;
+  final types.Room? room;
   final double? size;
   final String? image;
 
@@ -19,7 +19,7 @@ class UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        final imageUrl = image ?? room.imageUrl;
+        final imageUrl = image ?? room?.imageUrl;
         if (imageUrl != null && imageUrl.isNotEmpty) {
           Navigator.push(
             context,
@@ -33,16 +33,16 @@ class UserAvatar extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(types.Room room) {
-    final name = room.name ?? '';
+  Widget _buildAvatar(types.Room? room) {
+    final name = room?.name ?? '';
 
     return SizedBox(
       width: size ?? 40,
       height: size ?? 40,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(100),
-        child: CustomNetworkImage(
-          imageUrl: image ?? room.imageUrl ?? "",
+        child: CachedImage(
+          imageUrl: image ?? room?.imageUrl ?? "",
           fit: BoxFit.cover,
           errorWidget: Center(
             child: Text(

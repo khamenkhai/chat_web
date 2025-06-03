@@ -9,9 +9,11 @@ class LoadingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LoadingAnimationWidget.discreteCircle(
-      color: color ?? context.primaryColor,
-      size: radius,
+    return Center(
+      child: LoadingAnimationWidget.discreteCircle(
+        color: color ?? context.primaryColor,
+        size: radius,
+      ),
     );
   }
 }

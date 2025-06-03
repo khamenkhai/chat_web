@@ -29,7 +29,12 @@ class DeletedMessageTile extends StatelessWidget {
     );
 
     return Container(
-      margin: EdgeInsets.only(right: isMe ? 50 : 0, left: isMe ? 50 : 0),
+      margin: EdgeInsets.only(
+        right: isMe ? 50 : 0,
+        left: isMe ? 50 : 0,
+        top: 2,
+        bottom: 2,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
