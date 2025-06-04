@@ -7,12 +7,15 @@ import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:chat_web/view/rooms/widgets/chat_room_tile.dart';
 import 'package:chat_web/view/rooms/widgets/rooms_empty.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import '../chat/chat.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 class RoomsPage extends ConsumerStatefulWidget {
   const RoomsPage({super.key});
@@ -30,24 +33,43 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   }
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      html.document.addEventListener(
+        'visibilitychange',
+        (event) {
+          if (html.document.visibilityState == 'visible') {
+            setOnline(true);
+          } else {
+            setOnline(false);
+          }
+        },
+      );
+
+      // Handle window closing
+      html.window.addEventListener('beforeunload', (event) {
+        setOnline(false);
+      });
+    }
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      setOnline(true); // Don't update lastSeen here
-    } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      setOnline(false); // lastSeen will be updated in here
+    if (!kIsWeb) {
+      // Mobile behavior
+      if (state == AppLifecycleState.resumed) {
+        setOnline(true);
+      } else if (state == AppLifecycleState.paused ||
+          state == AppLifecycleState.detached) {
+        setOnline(false);
+      }
     }
   }
 
@@ -59,9 +81,11 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   Widget build(BuildContext context) {
     debugPrint("=> room page rebuild!");
     return ScreenTypeLayout.builder(
-      mobile: (context) => Scaffold(
-        body: SafeArea(child: _buildRoomsSidebar(isMobile: true)),
-      ),
+      mobile: (context) {
+        return Scaffold(
+          body: SafeArea(child: _buildRoomsSidebar(isMobile: true)),
+        );
+      },
       tablet: (context) => Scaffold(
         body: SafeArea(child: _buildRoomsSidebar(isMobile: true)),
       ),
@@ -87,8 +111,8 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
             ? Border()
             : Border(
                 right: BorderSide(
-                  color: Color(0xFFE2E8F0),
-                  width: 0.5,
+                  color: context.tertiary,
+                  width: 1,
                 ),
               ),
       ),
@@ -104,18 +128,23 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
               if (snapshot.hasData) {
                 return Row(
                   children: [
-                    CircleAvatar(
-                      backgroundColor:
-                          hasImage ? Colors.transparent : Colors.blue,
-                      backgroundImage:
-                          hasImage ? NetworkImage(user?.imageUrl ?? "") : null,
-                      radius: 16,
-                      child: !hasImage
-                          ? Text(
-                              user!.fullName.toString(),
-                              style: const TextStyle(color: Colors.white),
-                            )
-                          : null,
+                    GestureDetector(
+                      onTap: (){
+                        context.go("/test");
+                      },
+                      child: CircleAvatar(
+                        backgroundColor:
+                            hasImage ? Colors.transparent : Colors.blue,
+                        backgroundImage:
+                            hasImage ? NetworkImage(user?.imageUrl ?? "") : null,
+                        radius: 16,
+                        child: !hasImage
+                            ? Text(
+                                user!.fullName.toString(),
+                                style: const TextStyle(color: Colors.white),
+                              )
+                            : null,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(child: _buildSearchField()),

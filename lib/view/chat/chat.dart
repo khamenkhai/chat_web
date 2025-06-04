@@ -18,7 +18,6 @@ import 'package:chat_web/view/theme/theme_switch.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,10 +46,10 @@ class ChatPage extends StatelessWidget {
     // Add this listener for screen size changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (isDesktop(context)) {
+        context.go("/");
+
         // Delay slightly to allow the page to build before popping
-        Future.delayed(Duration.zero, () {
-          if (context.mounted) context.pop();
-        });
+        Future.delayed(Duration.zero, () {});
       }
     });
 
@@ -61,10 +60,6 @@ class ChatPage extends StatelessWidget {
         // Use `watch` to react to changes (if needed)
         final Room? room = ref.watch(selectedRoomProvider);
 
-        if (kDebugMode) {
-          print("=>=> room data: $room");
-        }
-
         if (room == null) {
           return FutureBuilder(
             future: FyreChat.instance.getRoomById(roomId),
@@ -73,7 +68,9 @@ class ChatPage extends StatelessWidget {
                 return const LoadingWidget();
               }
               if (snapshot.hasError) {
-                return  CustomErrorWidget(errorText: "${snapshot.error}",); // Handle errors properly
+                return CustomErrorWidget(
+                  errorText: "${snapshot.error}",
+                ); // Handle errors properly
               }
               // Update state safely (avoid side effects in `builder`)
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -242,14 +239,20 @@ class _ChatContentState extends State<_ChatContent> {
           error: (error, stack) => Center(child: Text('Error: $error')),
           data: (messages) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              
               _checkForNewMessages(messages);
             });
 
             return Column(
               children: [
                 const Divider(height: 1, thickness: 0.5),
-                Expanded(child: _buildMessageList(context, messages, ref)),
+                Expanded(
+                  child: _buildMessageList(
+                    context,
+                    messages,
+                    ref,
+                    widget.room,
+                  ),
+                ),
                 if (replyTo != null) _buildReplyWidget(replyTo, ref),
                 if (isAttachmentUploading)
                   const LinearProgressIndicator(minHeight: 2),
@@ -287,20 +290,20 @@ class _ChatContentState extends State<_ChatContent> {
   }
 
 // Update your message list building logic
-  Widget _buildMessageList(
-    BuildContext context,
-    List<types.Message> messages,
-    WidgetRef ref,
-  ) {
+  Widget _buildMessageList(BuildContext context, List<types.Message> messages,
+      WidgetRef ref, types.Room room) {
     // Group messages by user and determine which should show tails
     List<Widget> messageWidgets = [];
 
     for (int i = 0; i < messages.length; i++) {
       final message = messages[i];
       final currentAuthorId = message.author.id;
-      final showTail = i ==
-              messages.length - 1 || // Last message always shows tail
-          currentAuthorId != messages[i + 1].author.id; // Different author next
+      final showTail = i == messages.length - 1 ||
+          currentAuthorId != messages[i + 1].author.id;
+
+      if (message.author.id != FirebaseAuth.instance.currentUser?.uid) {
+        FyreChat.instance.markMessageAsSeen(room.id, message.id);
+      }
 
       messageWidgets.add(
         _buildMessageBubble(

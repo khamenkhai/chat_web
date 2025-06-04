@@ -6,6 +6,7 @@ import 'package:chat_web/view/chat/widgets/bubble_components/deleted_message_til
 import 'package:chat_web/view/chat/widgets/bubble_components/image_message_tile.dart';
 import 'package:chat_web/view/common/user_avatar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_reaction_button/flutter_reaction_button.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/service/chat_service.dart';
@@ -94,7 +95,11 @@ class MessageBubble extends StatelessWidget {
                       const SizedBox(width: 10),
                       UserAvatar(
                         room: room,
-                        image: room.users.where((e)=> e.id == FirebaseAuth.instance.currentUser!.uid).first.imageUrl,
+                        image: room.users
+                            .where((e) =>
+                                e.id == FirebaseAuth.instance.currentUser!.uid)
+                            .first
+                            .imageUrl,
                         size: 30,
                       ),
                     ],
@@ -202,75 +207,7 @@ class MessageBubble extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(1),
             decoration: BoxDecoration(),
-            child: ReactionButton<String>(
-              toggle: false,
-              direction: ReactionsBoxAlignment.rtl,
-              onReactionChanged: (Reaction<String>? reaction) {
-                // Handle selected reaction
-                FyreChat.instance.reactToMessage(
-                  roomId: roomId,
-                  messageId: message.id,
-                  emoji: reaction?.value ?? "",
-                );
-              },
-              reactions: <Reaction<String>>[
-                Reaction<String>(
-                  value: '👍',
-                  icon: Text(
-                    '👍',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-                Reaction<String>(
-                  value: '💙',
-                  icon: Text(
-                    '💙',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-                Reaction<String>(
-                  value: '😂',
-                  icon: Text(
-                    '😂',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-                Reaction<String>(
-                  value: '😮',
-                  icon: Text(
-                    '😮',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-                Reaction<String>(
-                  value: '😢',
-                  icon: Text(
-                    '😢',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-                Reaction<String>(
-                  value: '😡',
-                  icon: Text(
-                    '😡',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-              ],
-              boxElevation: 1,
-              boxColor: Colors.white,
-              boxRadius: 30,
-              itemsSpacing: 12,
-              itemSize: const Size(25, 25),
-              child: myReaction == null
-                  ? isMe
-                      ? Container()
-                      : Icon(
-                          IconlyLight.heart,
-                          size: 16,
-                        )
-                  : Text(myReaction),
-            ),
+            child: _reactionButtons(myReaction, isMe),
           ),
           if (isMe)
             FutureBuilder(
@@ -296,6 +233,78 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  ReactionButton<String> _reactionButtons(String? myReaction, bool isMe) {
+    return ReactionButton<String>(
+      toggle: false,
+      direction: ReactionsBoxAlignment.rtl,
+      onReactionChanged: (Reaction<String>? reaction) {
+        // Handle selected reaction
+        FyreChat.instance.reactToMessage(
+          roomId: roomId,
+          messageId: message.id,
+          emoji: reaction?.value ?? "",
+        );
+      },
+      reactions: <Reaction<String>>[
+        Reaction<String>(
+          value: '👍',
+          icon: Text(
+            '👍',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+        Reaction<String>(
+          value: '💙',
+          icon: Text(
+            '💙',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+        Reaction<String>(
+          value: '😂',
+          icon: Text(
+            '😂',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+        Reaction<String>(
+          value: '😮',
+          icon: Text(
+            '😮',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+        Reaction<String>(
+          value: '😢',
+          icon: Text(
+            '😢',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+        Reaction<String>(
+          value: '😡',
+          icon: Text(
+            '😡',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      ],
+      boxElevation: 1,
+      boxColor: Colors.white,
+      boxRadius: 30,
+      itemsSpacing: 12,
+      itemSize: const Size(25, 25),
+      child: myReaction == null
+          ? isMe
+              ? Container()
+              : Icon(
+                  CupertinoIcons.smiley,
+                  size: 16,
+                )
+          : Text(myReaction),
+    );
+  }
+
   Widget _buildReplyWidget(ThemeData theme, types.Message repliedMessage) {
     final messageColors = theme.extension<MessageColors>()!;
     final isReplyFromMe = repliedMessage.author.id == message.author.id;
@@ -306,8 +315,8 @@ class MessageBubble extends StatelessWidget {
         color:
             isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
         borderRadius: BorderRadius.only(
-          topRight: Radius.circular(12),
-          topLeft: Radius.circular(12),
+          topRight: showTail && isMe ? Radius.circular(0) : Radius.circular(12),
+          topLeft: showTail && !isMe ? Radius.circular(0) : Radius.circular(12),
         ),
       ),
       child: Column(

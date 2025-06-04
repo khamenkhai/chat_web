@@ -888,7 +888,6 @@ class FyreChat {
     await messageRef.update({'reactions': reactions});
   }
 
-
   Future<String?> getOtherReaction({
     required String roomId,
     required String messageId,
@@ -944,5 +943,28 @@ class FyreChat {
       }
       return null;
     }
+  }
+
+  /// Updates user data in Firestore (first name, last name, and image URL)
+  Future<void> updateUserData({
+    required String userId,
+    String? firstName,
+    String? lastName,
+    String? imageUrl,
+  }) async {
+    if (firebaseUser == null) return;
+
+    final updateData = <String, dynamic>{
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (firstName != null) updateData['firstName'] = firstName;
+    if (lastName != null) updateData['lastName'] = lastName;
+    if (imageUrl != null) updateData['imageUrl'] = imageUrl;
+
+    await getFirebaseFirestore
+        .collection(FireChatConst.usersCollectionName)
+        .doc(userId)
+        .update(updateData);
   }
 }

@@ -5,6 +5,7 @@ extension ThemeContext on BuildContext {
   ThemeData get theme => Theme.of(this);
   TextTheme get textTheme => theme.textTheme;
   ColorScheme get colorScheme => theme.colorScheme;
+  Color get cardColor => theme.cardColor;
   Color get primaryColor => theme.primaryColor;
   Color get onPrimary => theme.colorScheme.onPrimary;
   Color get secondary => theme.colorScheme.secondary;
