@@ -436,7 +436,8 @@ class MessageBubble extends StatelessWidget {
           Text(
             _formatTime(message.createdAt ?? 0),
             style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              color: context.secondaryTextColor,
+              fontWeight: FontWeight.normal
             ),
           ),
           const SizedBox(width: 10),
@@ -461,12 +462,12 @@ class MessageBubble extends StatelessWidget {
   Widget _buildMessageStatusIcon(BuildContext context, bool isSeen) {
     return Icon(
       isSeen ? Icons.done_all : Icons.done,
-      size: 16,
+      size: 12,
       color: isSeen
           ? context.isLightTheme
               ? context.primaryColor
               : Colors.white
-          : Theme.of(context).colorScheme.onSurfaceVariant,
+          : context.secondaryTextColor,
     );
   }
 

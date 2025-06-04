@@ -1,5 +1,8 @@
 import 'package:chat_web/chat_service/models/message_models.dart' as mm;
+import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:chat_web/controller/profile_provider.dart';
+import 'package:chat_web/core/utils/format_last_seen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
@@ -17,6 +20,8 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
+
+  bool switchValue = false;
 
   @override
   void initState() {
@@ -48,8 +53,6 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
       appBar: AppBar(
         title: const Text('Update Profile'),
         centerTitle: true,
-        backgroundColor: context.cardColor,
-        elevation: 1,
       ),
       body: profileState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -142,6 +145,27 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                       ),
                     ),
                     const SizedBox(height: 32),
+                    Switch(
+                        value: switchValue,
+                        onChanged: (value) {
+                          setOnline(value);
+                          setState(() {
+                            switchValue = value;
+                          });
+                        }),
+                    FutureBuilder(
+                      future: FyreChat.instance.getUserById(
+                          FirebaseAuth.instance.currentUser?.uid ?? ""),
+                      builder: (context, snapshot) {
+                        final bool isOnline = snapshot.data?.isOnline ?? false;
+                        return Text(
+                          isOnline
+                              ? "Active Now"
+                              : formatLastSeen(snapshot.data?.lastSeen),
+                          style: TextStyle(fontSize: 12, height: 0),
+                        );
+                      },
+                    ),
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -190,5 +214,9 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
         }
       }
     }
+  }
+
+  void setOnline(bool online) {
+    FyreChat.instance.setOnline(online);
   }
 }

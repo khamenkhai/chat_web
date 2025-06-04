@@ -9,6 +9,7 @@ import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/models/message_models.dart';
 import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:chat_web/core/utils/format_last_seen.dart';
 import 'package:chat_web/view/chat/widgets/edit_message_dialog.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
 import 'package:chat_web/view/chat/widgets/message_input.dart';
@@ -22,7 +23,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'package:timeago/timeago.dart' as timeago;
 import 'package:path_provider/path_provider.dart';
 
 // Provider for tracking attachment upload state
@@ -127,19 +127,7 @@ class ChatPage extends StatelessWidget {
     return await ref.getDownloadURL();
   }
 
-  String formatLastSeen(int? lastSeen) {
-    if (lastSeen == null) return "Last seen: unknown";
-
-    try {
-      final lastSeenDate = DateTime.fromMillisecondsSinceEpoch(lastSeen);
-      final formattedTime =
-          DateFormat.jm().format(lastSeenDate); // e.g., 5:20 PM
-      final timeAgo = timeago.format(lastSeenDate); // e.g., 5 minutes ago
-      return "Last seen $timeAgo at $formattedTime";
-    } catch (e) {
-      return "Last seen: invalid date";
-    }
-  }
+ 
 
   String formatTime(int? dateTime) {
     try {

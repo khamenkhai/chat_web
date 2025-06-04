@@ -16,6 +16,7 @@ extension ThemeContext on BuildContext {
   Color get onSurface => theme.colorScheme.onSurface;
   Color get onSurfaceVariant => theme.colorScheme.onSurfaceVariant;
   Color get tertiary => theme.colorScheme.tertiary;
+  Color get secondaryTextColor => theme.colorScheme.primaryContainer;
   /// Returns an inferred ThemeMode based on current brightness and theme
   ThemeMode get themeMode =>
       theme.brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light;

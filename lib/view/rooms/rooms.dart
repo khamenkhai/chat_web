@@ -26,10 +26,38 @@ class RoomsPage extends ConsumerStatefulWidget {
 
 class _RoomsPageState extends ConsumerState<RoomsPage>
     with WidgetsBindingObserver {
+  bool switchValue = false;
+
   Future<void> _logout() async {
     setOnline(false);
     await FirebaseAuth.instance.signOut();
     ref.read(selectedRoomProvider.notifier).setRoom(null);
+  }
+
+  void showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Logout"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [Text("Are you sure you want to logout?")],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => _logout(),
+              child: Text("Log Out"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -129,14 +157,15 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                 return Row(
                   children: [
                     GestureDetector(
-                      onTap: (){
-                        context.go("/test");
+                      onTap: () {
+                        context.go("/profile");
                       },
                       child: CircleAvatar(
                         backgroundColor:
                             hasImage ? Colors.transparent : Colors.blue,
-                        backgroundImage:
-                            hasImage ? NetworkImage(user?.imageUrl ?? "") : null,
+                        backgroundImage: hasImage
+                            ? NetworkImage(user?.imageUrl ?? "")
+                            : null,
                         radius: 16,
                         child: !hasImage
                             ? Text(
@@ -157,6 +186,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
           ),
           const SizedBox(height: 8),
           _buildAppBar(),
+         
           const SizedBox(height: 8),
           _buildRoomsList(),
         ],
@@ -186,13 +216,11 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
         PopupMenuButton<String>(
           padding: EdgeInsets.zero,
           onSelected: (value) {
-            if (value == 'logout') _logout();
-            if (value == 'users') context.go("/users");
+            if (value == 'logout') showLogoutDialog();
           },
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'logout', child: Text('Logout')),
             const PopupMenuItem(value: 'Setting', child: Text('Setting')),
-            const PopupMenuItem(value: 'users', child: Text('Users')),
           ],
         ),
       ],
