@@ -142,7 +142,7 @@ class ChatContentState extends State<ChatContent> {
     List<Widget> messageWidgets = [];
 
     for (int i = 0; i < messages.length; i++) {
-  
+
       final message = messages[i];
       final currentAuthorId = message.author.id;
       final showTail = i == messages.length - 1 ||
