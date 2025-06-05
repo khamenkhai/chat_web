@@ -4,6 +4,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconly/iconly.dart';
 import 'dart:io';
 import 'package:chat_web/controller/selected_room_provider.dart';
@@ -283,52 +284,73 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                           onPressed: () => _handleImageSelection(context),
                         ),
                   Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      focusNode: _focusNode,
-                      onChanged: (value) {
-                        ref
-                            .read(messageInputStateProvider.notifier)
-                            .updateText(value);
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            messageInputState.emojiShowing
-                                ? IconlyLight.close_square
-                                : Icons.emoji_emotions_outlined,
-                            color: messageInputState.emojiShowing
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).disabledColor,
-                          ),
-                          onPressed: _toggleEmojiKeyboard,
-                        ),
-                      ),
-                      onTap: () {
-                        if (messageInputState.emojiShowing) {
-                          ref
-                              .read(messageInputStateProvider.notifier)
-                              .hideEmojiKeyboard();
+                    child: KeyboardListener(
+                      focusNode: FocusNode(),
+                      onKeyEvent: (KeyEvent event) {
+                      
+                        if (event is KeyDownEvent &&
+                            (event.logicalKey == LogicalKeyboardKey.enter ||
+                                event.logicalKey ==
+                                    LogicalKeyboardKey.numpadEnter)) {
+                          final text =
+                              ref.read(messageInputStateProvider).text.trim();
+                          if (text.isNotEmpty) {
+                            _handleSendMessage(text, ref);
+                            _playSendSound();
+                            _textController.clear();
+                            ref.read(messageInputStateProvider.notifier)
+                              ..resetText()
+                              ..hideEmojiKeyboard();
+                          }
                         }
                       },
+                      child: TextField(
+                        controller: _textController,
+                        focusNode: _focusNode,
+                        onChanged: (value) {
+                          ref
+                              .read(messageInputStateProvider.notifier)
+                              .updateText(value);
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Type a message...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              messageInputState.emojiShowing
+                                  ? IconlyLight.close_square
+                                  : Icons.emoji_emotions_outlined,
+                              color: messageInputState.emojiShowing
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).disabledColor,
+                            ),
+                            onPressed: _toggleEmojiKeyboard,
+                          ),
+                        ),
+                        onTap: () {
+                          if (messageInputState.emojiShowing) {
+                            ref
+                                .read(messageInputStateProvider.notifier)
+                                .hideEmojiKeyboard();
+                          }
+                        },
+                      ),
                     ),
                   ),
                   IconButton(
@@ -341,7 +363,6 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                     onPressed: messageInputState.text.trim().isEmpty
                         ? null
                         : () async {
-                           
                             _handleSendMessage(messageInputState.text, ref);
                             await _playSendSound();
                             _textController.clear();
@@ -351,15 +372,6 @@ class _MessageInputState extends ConsumerState<MessageInput> {
 
                             // Play the send sound
                           },
-                    // onPressed: messageInputState.text.trim().isEmpty
-                    //     ? null
-                    //     : () {
-                    //         widget.onSend(messageInputState.text);
-                    //         _textController.clear();
-                    //         ref.read(messageInputStateProvider.notifier)
-                    //           ..resetText()
-                    //           ..hideEmojiKeyboard();
-                    //       },
                   ),
                 ],
               );

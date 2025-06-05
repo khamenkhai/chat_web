@@ -264,6 +264,63 @@ class FyreChat {
     );
   }
 
+  /// Returns messages from a room as a Future with the same parameters as the messages stream
+  Future<List<mm.Message>> getMessagesFuture(
+    mm.Room room, {
+    List<Object?>? endAt,
+    List<Object?>? endBefore,
+    int? limit,
+    List<Object?>? startAfter,
+    List<Object?>? startAt,
+  }) async {
+    if (firebaseUser == null) return [];
+
+    var query = getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/${room.id}/messages')
+        .orderBy('createdAt', descending: true);
+
+    if (endAt != null) query = query.endAt(endAt);
+    if (endBefore != null) query = query.endBefore(endBefore);
+    if (limit != null) query = query.limit(limit);
+    if (startAfter != null) query = query.startAfter(startAfter);
+    if (startAt != null) query = query.startAt(startAt);
+
+    final snapshot = await query.get();
+
+    final messages = await Future.wait(
+      snapshot.docs.map((doc) async {
+        final data = doc.data();
+        final author = room.users.firstWhere(
+          (u) => u.id == data['authorId'],
+          orElse: () => mm.User(id: data['authorId'] as String),
+        );
+
+        data['author'] = author.toJson();
+        data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+        data['id'] = doc.id;
+        data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+
+        // Check if the message has been seen by all users
+        final seenBy = data['seenBy'] as Map<String, dynamic>? ?? {};
+        final allUsersHaveSeen =
+            room.users.every((user) => seenBy.containsKey(user.id));
+
+        // Create the message
+        final message = mm.Message.fromJson(data).copyWith(
+          metadata: {
+            ...data['metadata'] ?? {},
+            'seen': allUsersHaveSeen,
+          },
+        );
+
+        // Process reply metadata if exists
+        return _processReplyMetadata(message, room);
+      }),
+    );
+
+    return messages;
+  }
+
   /// Returns a stream of changes in a room from Firebase.
   Stream<mm.Room> room(String roomId) {
     final fu = firebaseUser;

@@ -1,4 +1,7 @@
+import 'package:chat_web/chat_service/const/fire_chat_const.dart';
 import 'package:chat_web/view/chat/chat.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_pagination/firebase_pagination.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/controller/chat_sound_player.dart';
@@ -88,16 +91,68 @@ class ChatContentState extends State<ChatContent> {
               children: [
                 const Divider(height: 1, thickness: 0.5),
                 Expanded(
-                  child: _buildMessageList(
-                    context,
-                    messages,
-                    ref,
-                    widget.room,
+                  child: FirestorePagination(
+                    reverse: true,
+                    isLive: true,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _getResponsivePadding(context),
+                    ),
+                    initialLoader: LoadingWidget(),
+                    limit: 10,
+                    query: FirebaseFirestore.instance
+                        .collection(
+                            '${FireChatConst.roomsCollectionName}/${widget.room.id}/messages')
+                        .orderBy('createdAt', descending: true),
+                    itemBuilder: (context, docs, index) {
+                      final types.Room room = widget.room;
+                      final doc = docs[index];
+                      final data = doc.data() as Map<String, dynamic>;
+
+                      // Process the data similar to your messages function
+                      final author = room.users.firstWhere(
+                        (u) => u.id == data['authorId'],
+                        orElse: () =>
+                            types.User(id: data['authorId'] as String),
+                      );
+
+                      data['author'] = author.toJson();
+                      data['createdAt'] =
+                          data['createdAt']?.millisecondsSinceEpoch;
+                      data['id'] = doc.id;
+                      data['updatedAt'] =
+                          data['updatedAt']?.millisecondsSinceEpoch;
+
+                      // Check if the message has been seen by all users
+                      final seenBy =
+                          data['seenBy'] as Map<String, dynamic>? ?? {};
+                      final allUsersHaveSeen = room.users
+                          .every((user) => seenBy.containsKey(user.id));
+
+                      // Create the message
+                      final message = types.Message.fromJson(data).copyWith(
+                        metadata: {
+                          ...data['metadata'] ?? {},
+                          'seen': allUsersHaveSeen,
+                        },
+                      );
+
+                      // Process reply metadata if exists
+                      _processReplyMetadata(message, room);
+
+                      // Return a widget using the processed message
+                      return _buildMessageBubble(
+                        message.author.id ==
+                            FirebaseAuth.instance.currentUser?.uid,
+                        context,
+                        message,
+                        ref,
+                        false,
+                      );
+                    },
                   ),
                 ),
                 if (replyTo != null) _buildReplyWidget(replyTo, ref),
-                if (isAttachmentUploading)
-                  const LoadingWidget(),
+                if (isAttachmentUploading) const LoadingWidget(),
 
                 /// message input box
                 MessageInput(),
@@ -107,6 +162,21 @@ class ChatContentState extends State<ChatContent> {
         );
       },
     );
+  }
+
+  double _getResponsivePadding(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    if (width < 600) {
+      // Mobile
+      return 0;
+    } else if (width < 1024) {
+      // Tablet
+      return 1;
+    } else {
+      // Desktop
+      return 100;
+    }
   }
 
   Widget _buildMessageBubble(
@@ -128,58 +198,6 @@ class ChatContentState extends State<ChatContent> {
         onTap: () {},
         onLongPress: () => _handleLongPress(context, message, ref, isMe),
       ),
-    );
-  }
-
-// Update your message list building logic
-  Widget _buildMessageList(
-    BuildContext context,
-    List<types.Message> messages,
-    WidgetRef ref,
-    types.Room room,
-  ) {
-    // Group messages by user and determine which should show tails
-    List<Widget> messageWidgets = [];
-
-    for (int i = 0; i < messages.length; i++) {
-
-      final message = messages[i];
-      final currentAuthorId = message.author.id;
-      final showTail = i == messages.length - 1 ||
-          currentAuthorId != messages[i + 1].author.id;
-
-      if (message.author.id != FirebaseAuth.instance.currentUser?.uid) {
-        FyreChat.instance.markMessageAsSeen(room.id, message.id);
-      }
-
-      messageWidgets.add(
-        _buildMessageBubble(
-          message.author.id == FirebaseAuth.instance.currentUser?.uid,
-          context,
-          message,
-          ref,
-          showTail,
-        ),
-      );
-    }
-
-    return CustomScrollView(
-      reverse: true,
-      slivers: [
-        SliverPadding(
-          padding: EdgeInsets.symmetric(
-            vertical: 8,
-            horizontal: MediaQuery.of(context).size.width > 1200
-                ? 100
-                : MediaQuery.of(context).size.width > 800
-                    ? 8
-                    : 0,
-          ),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate(messageWidgets),
-          ),
-        ),
-      ],
     );
   }
 
@@ -251,5 +269,26 @@ class ChatContentState extends State<ChatContent> {
         ],
       ),
     );
+  }
+
+  types.Message _processReplyMetadata(
+    types.Message message,
+    types.Room room,
+  ) {
+    // If message has a replied message, ensure its author is properly set from room users
+    if (message.repliedMessage != null) {
+      final repliedMessage = message.repliedMessage!;
+      final originalAuthor = room.users.firstWhere(
+        (u) => u.id == repliedMessage.author.id,
+        orElse: () =>
+            repliedMessage.author, // Fall back to original author if not found
+      );
+      // Return message with updated repliedMessage author
+      return message.copyWith(
+        repliedMessage: repliedMessage.copyWith(author: originalAuthor),
+      );
+    }
+    // Return original message if no replied message
+    return message;
   }
 }
