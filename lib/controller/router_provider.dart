@@ -4,6 +4,7 @@ import 'package:chat_web/view/auth/register.dart';
 import 'package:chat_web/view/chat/chat.dart';
 import 'package:chat_web/view/profile/profile.dart';
 import 'package:chat_web/view/rooms/rooms.dart';
+import 'package:chat_web/view/test/test_page.dart';
 import 'package:chat_web/view/users/users.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -52,10 +53,10 @@ final routerProvider = Provider<GoRouter>(
           path: '/profile',
           builder: (context, state) => const ProfileUpdatePage(),
         ),
-        // GoRoute(
-        //   path: '/test',
-        //   builder: (context, state) =>  MessageScreen(),
-        // ),
+        GoRoute(
+          path: '/test',
+          builder: (context, state) =>  ListViewScreen(),
+        ),
         GoRoute(
           path: '/chat/:roomId',
           builder: (context, state) {

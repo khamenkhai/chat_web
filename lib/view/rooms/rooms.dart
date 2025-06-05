@@ -1,7 +1,6 @@
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:chat_web/chat_service/fyrechat.dart';
 import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
-import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/const/size_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:chat_web/view/rooms/widgets/chat_room_tile.dart';
@@ -13,9 +12,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:skeletonizer/skeletonizer.dart';
 import '../chat/chat.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+// // ignore: avoid_web_libraries_in_flutter
+// import 'dart:html' as html;
 
 class RoomsPage extends ConsumerStatefulWidget {
   const RoomsPage({super.key});
@@ -70,21 +70,21 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   void initState() {
     super.initState();
     if (kIsWeb) {
-      html.document.addEventListener(
-        'visibilitychange',
-        (event) {
-          if (html.document.visibilityState == 'visible') {
-            setOnline(true);
-          } else {
-            setOnline(false);
-          }
-        },
-      );
+      // html.document.addEventListener(
+      //   'visibilitychange',
+      //   (event) {
+      //     if (html.document.visibilityState == 'visible') {
+      //       setOnline(true);
+      //     } else {
+      //       setOnline(false);
+      //     }
+      //   },
+      // );
 
-      // Handle window closing
-      html.window.addEventListener('beforeunload', (event) {
-        setOnline(false);
-      });
+      // // Handle window closing
+      // html.window.addEventListener('beforeunload', (event) {
+      //   setOnline(false);
+      // });
     }
   }
 
@@ -158,7 +158,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                   children: [
                     GestureDetector(
                       onTap: () {
-                        context.go("/profile");
+                        context.go("/test");
                       },
                       child: CircleAvatar(
                         backgroundColor:
@@ -186,7 +186,6 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
           ),
           const SizedBox(height: 8),
           _buildAppBar(),
-         
           const SizedBox(height: 8),
           _buildRoomsList(),
         ],
@@ -254,17 +253,25 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   }
 
   Widget _buildRoomsList() {
-    final roomsAsync = ref.watch(roomsFutureProvider);
+    final roomsAsync = ref.watch(roomsStreamProvider);
 
     return Expanded(
       child: roomsAsync.when(
-        loading: () => LoadingWidget(),
+        loading: () => _buildRoomList([
+          Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+          Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+          Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+          Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+          Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+        ], true),
         error: (error, stack) => _buildErrorState(),
         data: (rooms) {
           if (rooms.isEmpty) {
             ref.read(selectedRoomProvider.notifier).setRoom(null);
           }
-          return rooms.isEmpty ? _buildEmptyListState() : _buildRoomList(rooms);
+          return rooms.isEmpty
+              ? _buildEmptyListState()
+              : _buildRoomList(rooms, false);
         },
       ),
     );
@@ -292,7 +299,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     );
   }
 
-  Widget _buildRoomList(List<types.Room> rooms) {
+  Widget _buildRoomList(List<types.Room> rooms, bool enabled) {
     final sortedRooms = List<types.Room>.from(rooms)
       ..sort((a, b) => (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
 
@@ -305,13 +312,16 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
         final isDesktop = getDeviceType(MediaQuery.of(context).size) ==
             DeviceScreenType.desktop;
 
-        return ChatRoomTile(
-          isDesktop: isDesktop,
-          isSelected: isSelected,
-          room: room,
-          onTap: (p0) {
-            _onRoomTap(room);
-          },
+        return Skeletonizer(
+          enabled: enabled,
+          child: ChatRoomTile(
+            isDesktop: isDesktop,
+            isSelected: isSelected,
+            room: room,
+            onTap: (p0) {
+              _onRoomTap(room);
+            },
+          ),
         );
       },
     );

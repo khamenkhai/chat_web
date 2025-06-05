@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:chat_web/view/chat/chat.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
@@ -64,11 +65,11 @@ final messageInputStateProvider =
 );
 
 class MessageInput extends ConsumerStatefulWidget {
-  final Function(String) onSend;
+  // final Function(String) onSend;
 
   const MessageInput({
     super.key,
-    required this.onSend,
+    // required this.onSend,
   });
 
   @override
@@ -106,6 +107,27 @@ class _MessageInputState extends ConsumerState<MessageInput> {
     } catch (e) {
       debugPrint('Error loading sound: $e');
     }
+  }
+
+  void _handleSendMessage(String text, WidgetRef ref) {
+    final reply = ref.read(replyMessageProvider);
+
+    final room = ref.read(selectedRoomProvider);
+
+    if (reply != null) {
+      FyreChat.instance.sendReply(
+        originalMessage: reply,
+        partialReply: types.PartialText(text: text),
+        roomId: room?.id ?? "",
+      );
+    } else {
+      FyreChat.instance.sendMessage(
+        types.PartialText(text: text),
+        room?.id ?? "",
+      );
+    }
+
+    ref.read(replyMessageProvider.notifier).state = null;
   }
 
   Future<void> _playSendSound() async {
@@ -319,7 +341,8 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                     onPressed: messageInputState.text.trim().isEmpty
                         ? null
                         : () async {
-                            widget.onSend(messageInputState.text);
+                           
+                            _handleSendMessage(messageInputState.text, ref);
                             await _playSendSound();
                             _textController.clear();
                             ref.read(messageInputStateProvider.notifier)
@@ -327,7 +350,6 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                               ..hideEmojiKeyboard();
 
                             // Play the send sound
-                            
                           },
                     // onPressed: messageInputState.text.trim().isEmpty
                     //     ? null

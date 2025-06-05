@@ -197,6 +197,14 @@ class FyreChat {
         .delete();
   }
 
+  Future<int> getMessageCount(String roomId) async {
+    final querySnapshot = await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
+        .get();
+
+    return querySnapshot.size;
+  }
+
   /// Returns a stream of messages from Firebase for a given room.
   ////// Returns a stream of messages from Firebase for a given room.
   /// Now with enhanced reply support.
@@ -537,6 +545,26 @@ class FyreChat {
     return mm.User.fromJson(data);
   }
 
+  Stream<mm.User?> getUserByIdStream(String id) {
+    return getFirebaseFirestore
+        .collection(FireChatConst.usersCollectionName)
+        .doc(id)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) return null;
+
+      final data = doc.data();
+      if (data == null) return null;
+
+      data['id'] = doc.id;
+      data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+      data['lastSeen'] = data['lastSeen']?.millisecondsSinceEpoch;
+      data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+
+      return mm.User.fromJson(data);
+    });
+  }
+
   void setOnline(bool online) {
     if (firebaseUser == null) return;
 
@@ -547,7 +575,7 @@ class FyreChat {
   }
 
   Future<List<mm.User>> searchUsersByFullName(String query) async {
-    if (firebaseUser == null) return [];
+    if (firebaseUser == null || query.trim().isEmpty) return [];
 
     final snapshot = await getFirebaseFirestore
         .collection(FireChatConst.usersCollectionName)

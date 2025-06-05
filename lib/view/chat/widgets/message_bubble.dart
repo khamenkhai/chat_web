@@ -1,5 +1,5 @@
 // ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+// import 'dart:html' as html;
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:chat_web/view/chat/widgets/bubble_components/deleted_message_tile.dart';
@@ -159,23 +159,25 @@ class MessageBubble extends StatelessWidget {
   }
 
   void _downloadFile(
-      types.FileMessage fileMessage, BuildContext context) async {
+    types.FileMessage fileMessage,
+    BuildContext context,
+  ) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Downloading ${fileMessage.name}...'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('Downloading ${fileMessage.name}...'),
+      //     duration: const Duration(seconds: 2),
+      //   ),
+      // );
 
-      final anchor = html.AnchorElement(href: fileMessage.uri)
-        ..target = '_blank'
-        ..download = fileMessage.name
-        ..rel = 'noopener noreferrer';
+      // final anchor = html.AnchorElement(href: fileMessage.uri)
+      //   ..target = '_blank'
+      //   ..download = fileMessage.name
+      //   ..rel = 'noopener noreferrer';
 
-      html.document.body?.append(anchor);
-      anchor.click();
-      anchor.remove();
+      // html.document.body?.append(anchor);
+      // anchor.click();
+      // anchor.remove();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -436,9 +438,8 @@ class MessageBubble extends StatelessWidget {
           Text(
             _formatTime(message.createdAt ?? 0),
             style: theme.textTheme.labelSmall?.copyWith(
-              color: context.secondaryTextColor,
-              fontWeight: FontWeight.normal
-            ),
+                color: context.secondaryTextColor,
+                fontWeight: FontWeight.normal),
           ),
           const SizedBox(width: 10),
           if (isMe) _buildMessageStatusIcon(context, isSeen),
