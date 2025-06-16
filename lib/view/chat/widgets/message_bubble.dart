@@ -87,26 +87,26 @@ class MessageBubble extends StatelessWidget {
             ),
           ),
 
-          /// other user avatar
-          (isMe && showTail)
-              ? SizedBox(
-                  width: 40,
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 10),
-                      UserAvatar(
-                        room: room,
-                        image: room.users
-                            .where((e) =>
-                                e.id == FirebaseAuth.instance.currentUser!.uid)
-                            .first
-                            .imageUrl,
-                        size: 30,
-                      ),
-                    ],
-                  ),
-                )
-              : Container(width: 40),
+          /// my user avatar
+          // (isMe && showTail)
+          //     ? SizedBox(
+          //         width: 40,
+          //         child: Row(
+          //           children: [
+          //             const SizedBox(width: 10),
+          //             UserAvatar(
+          //               room: room,
+          //               image: room.users
+          //                   .where((e) =>
+          //                       e.id == FirebaseAuth.instance.currentUser!.uid)
+          //                   .first
+          //                   .imageUrl,
+          //               size: 30,
+          //             ),
+          //           ],
+          //         ),
+          //       )
+          //     : Container(width: 40),
         ],
       ),
     );

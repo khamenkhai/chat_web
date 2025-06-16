@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
 
-Future<void> showMessageOptionsDialog(
-    {required BuildContext context,
-    required VoidCallback onEdit,
-    required VoidCallback onReply,
-    required VoidCallback onDelete,
-    required bool isTextMessage}) {
+Future<void> showMessageOptionsDialog({
+  required BuildContext context,
+  required VoidCallback onEdit,
+  required VoidCallback onReply,
+  required VoidCallback onDelete,
+  required bool isTextMessage,
+}) {
+  final Size size = MediaQuery.of(context).size;
   return showDialog(
     context: context,
     builder: (context) => Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 120, vertical: 200),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: size.width < 600 ? 10 : 120,
+        vertical: size.width < 600 ? 10 : 200,
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 300),
         child: Column(
@@ -27,7 +32,8 @@ Future<void> showMessageOptionsDialog(
             const Divider(height: 20),
             isTextMessage
                 ? ListTile(
-                    leading: const Icon(IconlyBold.edit, color: Colors.blueAccent),
+                    leading:
+                        const Icon(IconlyBold.edit, color: Colors.blueAccent),
                     title: const Text("Edit Message"),
                     onTap: () {
                       Navigator.pop(context);

@@ -56,7 +56,6 @@ class UserAvatar extends StatelessWidget {
   }
 }
 
-
 class _FullImageViewer extends StatelessWidget {
   const _FullImageViewer({required this.imageUrl});
 
@@ -66,7 +65,18 @@ class _FullImageViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+          ),
+        ),
+      ),
       body: Center(
         child: PhotoView(
           imageProvider: NetworkImage(imageUrl),

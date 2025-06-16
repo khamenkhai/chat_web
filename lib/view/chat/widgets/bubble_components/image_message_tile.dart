@@ -18,8 +18,20 @@ class ImageMessageTile extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) => Scaffold(
-              // backgroundColor: Colors.black,
-              appBar: AppBar(),
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                leading: IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
               body: Center(
                 child: PhotoView(
                   imageProvider: CachedNetworkImageProvider(imageUrl),
