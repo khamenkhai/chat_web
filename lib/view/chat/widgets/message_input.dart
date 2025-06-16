@@ -1,7 +1,10 @@
+import 'package:audioplayers/audioplayers.dart';
+import 'package:chat_web/view/chat/chat.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconly/iconly.dart';
 import 'dart:io';
 import 'package:chat_web/controller/selected_room_provider.dart';
@@ -14,38 +17,127 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 
-class MessageInput extends StatefulWidget {
-  final Function(String) onSend;
+// State notifier for managing the message input state
+class MessageInputStateNotifier extends StateNotifier<MessageInputState> {
+  MessageInputStateNotifier() : super(MessageInputState());
+
+  void toggleEmojiKeyboard() {
+    state = state.copyWith(emojiShowing: !state.emojiShowing);
+  }
+
+  void updateText(String text) {
+    state = state.copyWith(text: text);
+  }
+
+  void resetText() {
+    state = state.copyWith(text: '');
+  }
+
+  void hideEmojiKeyboard() {
+    state = state.copyWith(emojiShowing: false);
+  }
+}
+
+// State class
+class MessageInputState {
+  final bool emojiShowing;
+  final String text;
+
+  MessageInputState({
+    this.emojiShowing = false,
+    this.text = '',
+  });
+
+  MessageInputState copyWith({
+    bool? emojiShowing,
+    String? text,
+  }) {
+    return MessageInputState(
+      emojiShowing: emojiShowing ?? this.emojiShowing,
+      text: text ?? this.text,
+    );
+  }
+}
+
+// Provider
+final messageInputStateProvider =
+    StateNotifierProvider<MessageInputStateNotifier, MessageInputState>(
+  (ref) => MessageInputStateNotifier(),
+);
+
+class MessageInput extends ConsumerStatefulWidget {
+  // final Function(String) onSend;
 
   const MessageInput({
     super.key,
-    required this.onSend,
+    // required this.onSend,
   });
 
   @override
-  State<MessageInput> createState() => _MessageInputState();
+  ConsumerState<MessageInput> createState() => _MessageInputState();
 }
 
-class _MessageInputState extends State<MessageInput> {
+class _MessageInputState extends ConsumerState<MessageInput> {
   final _textController = TextEditingController();
-  bool _emojiShowing = false;
   final FocusNode _focusNode = FocusNode();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(() {
-      if (!_focusNode.hasFocus && _emojiShowing) {
-        setState(() => _emojiShowing = false);
+      if (!_focusNode.hasFocus &&
+          ref.read(messageInputStateProvider).emojiShowing) {
+        ref.read(messageInputStateProvider.notifier).hideEmojiKeyboard();
       }
     });
+    _loadSound();
   }
 
   @override
   void dispose() {
     _textController.dispose();
     _focusNode.dispose();
+    _audioPlayer.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSound() async {
+    try {
+      await _audioPlayer.setSourceUrl('assets/sounds/message_send.mp3');
+    } catch (e) {
+      debugPrint('Error loading sound: $e');
+    }
+  }
+
+  void _handleSendMessage(String text, WidgetRef ref) {
+    final reply = ref.read(replyMessageProvider);
+
+    final room = ref.read(selectedRoomProvider);
+
+    if (reply != null) {
+      FyreChat.instance.sendReply(
+        originalMessage: reply,
+        partialReply: types.PartialText(text: text),
+        roomId: room?.id ?? "",
+      );
+    } else {
+      FyreChat.instance.sendMessage(
+        types.PartialText(text: text),
+        room?.id ?? "",
+      );
+    }
+
+    ref.read(replyMessageProvider.notifier).state = null;
+  }
+
+  Future<void> _playSendSound() async {
+    try {
+      await _audioPlayer.setVolume(0.3); // Lower volume for send sound
+      await _audioPlayer.resume();
+    } catch (e) {
+      debugPrint('Error playing send sound: $e');
+    }
   }
 
   void _onEmojiSelected(category, Emoji emoji) {
@@ -53,6 +145,9 @@ class _MessageInputState extends State<MessageInput> {
       ..text += emoji.emoji
       ..selection = TextSelection.fromPosition(
           TextPosition(offset: _textController.text.length));
+    ref
+        .read(messageInputStateProvider.notifier)
+        .updateText(_textController.text);
   }
 
   void _onBackspacePressed() {
@@ -60,20 +155,23 @@ class _MessageInputState extends State<MessageInput> {
       ..text = _textController.text.characters.skipLast(1).toString()
       ..selection = TextSelection.fromPosition(
           TextPosition(offset: _textController.text.length));
+    ref
+        .read(messageInputStateProvider.notifier)
+        .updateText(_textController.text);
   }
 
   void _toggleEmojiKeyboard() {
-    setState(() {
-      _emojiShowing = !_emojiShowing;
-      if (_emojiShowing) {
-        _focusNode.unfocus();
-      } else {
-        _focusNode.requestFocus();
-      }
-    });
+    final currentState = ref.read(messageInputStateProvider);
+    ref.read(messageInputStateProvider.notifier).toggleEmojiKeyboard();
+
+    if (currentState.emojiShowing) {
+      _focusNode.requestFocus();
+    } else {
+      _focusNode.unfocus();
+    }
   }
 
-  Future<void> _handleFileSelection(WidgetRef ref) async {
+  Future<void> _handleFileSelection() async {
     final result = await FilePicker.platform.pickFiles(withData: true);
     if (result != null && result.files.single.bytes != null) {
       ref.read(attachmentUploadingProvider.notifier).state = true;
@@ -92,8 +190,7 @@ class _MessageInputState extends State<MessageInput> {
           size: result.files.single.size,
           uri: uri,
         );
-
-        final room = ref.read(selectedRoomProvider.notifier).state;
+        final room = ref.read(selectedRoomProvider);
 
         if (room != null) {
           FyreChat.instance.sendMessage(message, room.id);
@@ -104,10 +201,7 @@ class _MessageInputState extends State<MessageInput> {
     }
   }
 
-  Future<void> _handleImageSelection(
-    WidgetRef ref,
-    BuildContext context,
-  ) async {
+  Future<void> _handleImageSelection(BuildContext context) async {
     final picker = ImagePicker();
     try {
       final result = await picker.pickImage(
@@ -137,7 +231,8 @@ class _MessageInputState extends State<MessageInput> {
         uri: uri,
         width: image.width.toDouble(),
       );
-      final room = ref.read(selectedRoomProvider.notifier).state;
+      final room = ref.read(selectedRoomProvider);
+
       if (room != null) {
         FyreChat.instance.sendMessage(message, room.id);
       }
@@ -152,6 +247,8 @@ class _MessageInputState extends State<MessageInput> {
 
   @override
   Widget build(BuildContext context) {
+    final messageInputState = ref.watch(messageInputStateProvider);
+
     return Column(
       children: [
         Padding(
@@ -171,7 +268,7 @@ class _MessageInputState extends State<MessageInput> {
                             IconlyLight.folder,
                             color: Theme.of(context).disabledColor,
                           ),
-                          onPressed: () => _handleFileSelection(ref),
+                          onPressed: _handleFileSelection,
                         ),
                   isImageUploading
                       ? Container(
@@ -184,64 +281,96 @@ class _MessageInputState extends State<MessageInput> {
                             IconlyLight.image_2,
                             color: Theme.of(context).disabledColor,
                           ),
-                          onPressed: () => _handleImageSelection(ref, context),
+                          onPressed: () => _handleImageSelection(context),
                         ),
                   Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      focusNode: _focusNode,
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _emojiShowing
-                                ? IconlyLight.close_square
-                                : Icons.emoji_emotions_outlined,
-                            color: _emojiShowing
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).disabledColor,
-                          ),
-                          onPressed: _toggleEmojiKeyboard,
-                        ),
-                      ),
-                      onChanged: (text) => setState(() {}),
-                      onTap: () {
-                        if (_emojiShowing) {
-                          setState(() => _emojiShowing = false);
+                    child: KeyboardListener(
+                      focusNode: FocusNode(),
+                      onKeyEvent: (KeyEvent event) {
+                      
+                        if (event is KeyDownEvent &&
+                            (event.logicalKey == LogicalKeyboardKey.enter ||
+                                event.logicalKey ==
+                                    LogicalKeyboardKey.numpadEnter)) {
+                          final text =
+                              ref.read(messageInputStateProvider).text.trim();
+                          if (text.isNotEmpty) {
+                            _handleSendMessage(text, ref);
+                            _playSendSound();
+                            _textController.clear();
+                            ref.read(messageInputStateProvider.notifier)
+                              ..resetText()
+                              ..hideEmojiKeyboard();
+                          }
                         }
                       },
+                      child: TextField(
+                        controller: _textController,
+                        focusNode: _focusNode,
+                        onChanged: (value) {
+                          ref
+                              .read(messageInputStateProvider.notifier)
+                              .updateText(value);
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Type a message...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              messageInputState.emojiShowing
+                                  ? IconlyLight.close_square
+                                  : Icons.emoji_emotions_outlined,
+                              color: messageInputState.emojiShowing
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).disabledColor,
+                            ),
+                            onPressed: _toggleEmojiKeyboard,
+                          ),
+                        ),
+                        onTap: () {
+                          if (messageInputState.emojiShowing) {
+                            ref
+                                .read(messageInputStateProvider.notifier)
+                                .hideEmojiKeyboard();
+                          }
+                        },
+                      ),
                     ),
                   ),
                   IconButton(
                     icon: Icon(
                       IconlyBold.send,
-                      color: _textController.text.trim().isEmpty
+                      color: messageInputState.text.trim().isEmpty
                           ? Theme.of(context).disabledColor
                           : Theme.of(context).colorScheme.primary,
                     ),
-                    onPressed: _textController.text.trim().isEmpty
+                    onPressed: messageInputState.text.trim().isEmpty
                         ? null
-                        : () {
-                            widget.onSend(_textController.text);
+                        : () async {
+                            _handleSendMessage(messageInputState.text, ref);
+                            await _playSendSound();
                             _textController.clear();
-                            setState(() => _emojiShowing = false);
+                            ref.read(messageInputStateProvider.notifier)
+                              ..resetText()
+                              ..hideEmojiKeyboard();
+
+                            // Play the send sound
                           },
                   ),
                 ],
@@ -250,7 +379,7 @@ class _MessageInputState extends State<MessageInput> {
           ),
         ),
         Offstage(
-          offstage: !_emojiShowing,
+          offstage: !messageInputState.emojiShowing,
           child: SizedBox(
             height: 250,
             child: EmojiPicker(
@@ -265,7 +394,6 @@ class _MessageInputState extends State<MessageInput> {
                           ? 1.30
                           : 1.0),
                   backgroundColor: Theme.of(context).colorScheme.surface,
-                  // bottomActionBarColor: Theme.of(context).colorScheme.surface,
                   buttonMode: ButtonMode.MATERIAL,
                 ),
                 categoryViewConfig: CategoryViewConfig(
@@ -274,7 +402,6 @@ class _MessageInputState extends State<MessageInput> {
                   iconColorSelected: Theme.of(context).colorScheme.primary,
                   backspaceColor: Theme.of(context).colorScheme.primary,
                   indicatorColor: Theme.of(context).colorScheme.primary,
-                  // showBackspaceButton: true,
                 ),
                 skinToneConfig: SkinToneConfig(
                   enabled: true,
@@ -286,7 +413,6 @@ class _MessageInputState extends State<MessageInput> {
                 ),
                 searchViewConfig: SearchViewConfig(
                   backgroundColor: Theme.of(context).colorScheme.surface,
-                  // buttonColor: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),

@@ -5,6 +5,7 @@ extension ThemeContext on BuildContext {
   ThemeData get theme => Theme.of(this);
   TextTheme get textTheme => theme.textTheme;
   ColorScheme get colorScheme => theme.colorScheme;
+  Color get cardColor => theme.cardColor;
   Color get primaryColor => theme.primaryColor;
   Color get onPrimary => theme.colorScheme.onPrimary;
   Color get secondary => theme.colorScheme.secondary;
@@ -15,4 +16,10 @@ extension ThemeContext on BuildContext {
   Color get onSurface => theme.colorScheme.onSurface;
   Color get onSurfaceVariant => theme.colorScheme.onSurfaceVariant;
   Color get tertiary => theme.colorScheme.tertiary;
+  Color get secondaryTextColor => theme.colorScheme.primaryContainer;
+  /// Returns an inferred ThemeMode based on current brightness and theme
+  ThemeMode get themeMode =>
+      theme.brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light;
+  
+  bool get isLightTheme => themeMode == ThemeMode.light;
 }

@@ -9,9 +9,9 @@ class SharedPref {
   }
 
   /// TO WRITE YOUR CUSTOM KEY HERE
-  final String BEARER_TOKEN = "USER_TOKEN";
-  final String THEME_KEY = "APP_THEME";
-  final String LOCATION_KEY = "APP_LOCATION"; // Fixed the duplicate key
+  final String bearerToken = "USER_TOKEN";
+  final String themeKey = "APP_THEME";
+
 
   /// Ensure SharedPreferences is initialized
   Future<void> _ensureInitialized() async {

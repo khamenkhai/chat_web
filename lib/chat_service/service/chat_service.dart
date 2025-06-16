@@ -197,6 +197,14 @@ class FyreChat {
         .delete();
   }
 
+  Future<int> getMessageCount(String roomId) async {
+    final querySnapshot = await getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
+        .get();
+
+    return querySnapshot.size;
+  }
+
   /// Returns a stream of messages from Firebase for a given room.
   ////// Returns a stream of messages from Firebase for a given room.
   /// Now with enhanced reply support.
@@ -254,6 +262,63 @@ class FyreChat {
         return messages;
       },
     );
+  }
+
+  /// Returns messages from a room as a Future with the same parameters as the messages stream
+  Future<List<mm.Message>> getMessagesFuture(
+    mm.Room room, {
+    List<Object?>? endAt,
+    List<Object?>? endBefore,
+    int? limit,
+    List<Object?>? startAfter,
+    List<Object?>? startAt,
+  }) async {
+    if (firebaseUser == null) return [];
+
+    var query = getFirebaseFirestore
+        .collection('${FireChatConst.roomsCollectionName}/${room.id}/messages')
+        .orderBy('createdAt', descending: true);
+
+    if (endAt != null) query = query.endAt(endAt);
+    if (endBefore != null) query = query.endBefore(endBefore);
+    if (limit != null) query = query.limit(limit);
+    if (startAfter != null) query = query.startAfter(startAfter);
+    if (startAt != null) query = query.startAt(startAt);
+
+    final snapshot = await query.get();
+
+    final messages = await Future.wait(
+      snapshot.docs.map((doc) async {
+        final data = doc.data();
+        final author = room.users.firstWhere(
+          (u) => u.id == data['authorId'],
+          orElse: () => mm.User(id: data['authorId'] as String),
+        );
+
+        data['author'] = author.toJson();
+        data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+        data['id'] = doc.id;
+        data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+
+        // Check if the message has been seen by all users
+        final seenBy = data['seenBy'] as Map<String, dynamic>? ?? {};
+        final allUsersHaveSeen =
+            room.users.every((user) => seenBy.containsKey(user.id));
+
+        // Create the message
+        final message = mm.Message.fromJson(data).copyWith(
+          metadata: {
+            ...data['metadata'] ?? {},
+            'seen': allUsersHaveSeen,
+          },
+        );
+
+        // Process reply metadata if exists
+        return _processReplyMetadata(message, room);
+      }),
+    );
+
+    return messages;
   }
 
   /// Returns a stream of changes in a room from Firebase.
@@ -323,6 +388,30 @@ class FyreChat {
       query,
       FireChatConst.usersCollectionName,
     );
+  }
+
+  Stream<List<mm.Room>> roomStreamList({bool orderByUpdatedAt = false}) {
+    final fu = firebaseUser;
+
+    if (fu == null) return const Stream.empty();
+
+    final collection = orderByUpdatedAt
+        ? getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
+            .where('userIds', arrayContains: fu.uid)
+            .orderBy('updatedAt', descending: true)
+        : getFirebaseFirestore
+            .collection(FireChatConst.roomsCollectionName)
+            .where('userIds', arrayContains: fu.uid);
+
+    return collection.snapshots().asyncMap((snapshot) {
+      return processRoomsQuery(
+        fu,
+        getFirebaseFirestore,
+        snapshot,
+        FireChatConst.usersCollectionName,
+      );
+    });
   }
 
   void sendMessageReply(mm.Message partialMessage, String roomId) async {
@@ -513,6 +602,26 @@ class FyreChat {
     return mm.User.fromJson(data);
   }
 
+  Stream<mm.User?> getUserByIdStream(String id) {
+    return getFirebaseFirestore
+        .collection(FireChatConst.usersCollectionName)
+        .doc(id)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) return null;
+
+      final data = doc.data();
+      if (data == null) return null;
+
+      data['id'] = doc.id;
+      data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+      data['lastSeen'] = data['lastSeen']?.millisecondsSinceEpoch;
+      data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+
+      return mm.User.fromJson(data);
+    });
+  }
+
   void setOnline(bool online) {
     if (firebaseUser == null) return;
 
@@ -523,7 +632,7 @@ class FyreChat {
   }
 
   Future<List<mm.User>> searchUsersByFullName(String query) async {
-    if (firebaseUser == null) return [];
+    if (firebaseUser == null || query.trim().isEmpty) return [];
 
     final snapshot = await getFirebaseFirestore
         .collection(FireChatConst.usersCollectionName)
@@ -634,10 +743,6 @@ class FyreChat {
         partialText: partialReply,
       ).copyWith(
         repliedMessage: originalMessage,
-        metadata: {
-          ...partialReply.metadata ?? {},
-          // 'replyTo': originalMessage.toJson(),
-        },
       );
     } else if (partialReply is mm.PartialImage) {
       replyMessage = mm.ImageMessage.fromPartial(
@@ -864,34 +969,6 @@ class FyreChat {
     await messageRef.update({'reactions': reactions});
   }
 
-  Future<String?> getMyReaction({
-    required String roomId,
-    required String messageId,
-  }) async {
-    if (firebaseUser == null) return null;
-
-    final String userId = firebaseUser!.uid;
-
-    final messageRef = FirebaseFirestore.instance
-        .collection('${FireChatConst.roomsCollectionName}/$roomId/messages')
-        .doc(messageId);
-
-    final snapshot = await messageRef.get();
-
-    if (!snapshot.exists) {
-      if (kDebugMode) {
-        print('Message does not exist.');
-      }
-      return null;
-    }
-
-    final data = snapshot.data();
-    final reactions = Map<String, dynamic>.from(data?['reactions'] ?? {});
-
-    // Return the emoji for the current user if it exists
-    return reactions[userId] as String?;
-  }
-
   Future<String?> getOtherReaction({
     required String roomId,
     required String messageId,
@@ -919,5 +996,56 @@ class FyreChat {
 
     // Return the emoji for the current user if it exists
     return reactions[userId] as String?;
+  }
+
+  /// Gets room data by room ID
+  /// Returns [Future<mm.Room?>] - The room if found, null otherwise
+  Future<mm.Room?> getRoomById(String roomId) async {
+    final fu = firebaseUser;
+    if (fu == null) return null;
+
+    try {
+      final doc = await getFirebaseFirestore
+          .collection(FireChatConst.roomsCollectionName)
+          .doc(roomId)
+          .get();
+
+      if (!doc.exists) return null;
+
+      return await processRoomDocument(
+        doc,
+        fu,
+        getFirebaseFirestore,
+        FireChatConst.usersCollectionName,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting room by ID: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Updates user data in Firestore (first name, last name, and image URL)
+  Future<void> updateUserData({
+    required String userId,
+    String? firstName,
+    String? lastName,
+    String? imageUrl,
+  }) async {
+    if (firebaseUser == null) return;
+
+    final updateData = <String, dynamic>{
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (firstName != null) updateData['firstName'] = firstName;
+    if (lastName != null) updateData['lastName'] = lastName;
+    if (imageUrl != null) updateData['imageUrl'] = imageUrl;
+
+    await getFirebaseFirestore
+        .collection(FireChatConst.usersCollectionName)
+        .doc(userId)
+        .update(updateData);
   }
 }

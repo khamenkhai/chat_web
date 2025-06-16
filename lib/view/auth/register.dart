@@ -1,8 +1,10 @@
+import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:chat_web/controller/auth_provider.dart';
 import 'package:chat_web/core/const/size_const.dart';
+import 'package:iconly/iconly.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -136,7 +138,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 controller: firstNameController,
                 decoration: const InputDecoration(
                   labelText: 'First Name',
-                  prefixIcon: Icon(Icons.person_outline),
+                  prefixIcon: Icon(IconlyLight.profile),
                 ),
                 textInputAction: TextInputAction.next,
                 validator: (value) =>
@@ -148,7 +150,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 controller: lastNameController,
                 decoration: const InputDecoration(
                   labelText: 'Last Name',
-                  prefixIcon: Icon(Icons.person_outline),
+                  prefixIcon: Icon(IconlyLight.profile),
                 ),
                 textInputAction: TextInputAction.next,
                 validator: (value) =>
@@ -160,7 +162,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 controller: imageUrlController,
                 decoration: const InputDecoration(
                   labelText: 'Image URL',
-                  prefixIcon: Icon(Icons.image_outlined),
+                  prefixIcon: Icon(IconlyLight.image),
                 ),
                 textInputAction: TextInputAction.next,
                 validator: (value) =>
@@ -172,7 +174,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 controller: emailController,
                 decoration: const InputDecoration(
                   labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
+                  prefixIcon: Icon(IconlyLight.message),
                 ),
                 textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.emailAddress,
@@ -190,7 +192,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock_outline),
+                  prefixIcon: Icon(IconlyLight.lock),
                 ),
                 textInputAction: TextInputAction.done,
                 validator: (value) {
@@ -207,20 +209,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               FilledButton(
                 onPressed: isLoading ? null : _register,
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: SizeConst.kHorizontalPadding,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: isLoading
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
+                        width: 20, height: 20, child: LoadingWidget())
                     : const Text('Register'),
               ),
               const SizedBox(height: 24),
@@ -247,7 +246,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         context.go('/login');
                       },
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 16,horizontal: SizeConst.kHorizontalPadding),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

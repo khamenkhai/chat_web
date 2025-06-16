@@ -112,17 +112,18 @@ class AppTheme {
         surface: Colors.white,
         onSurface: Colors.black,
         onSurfaceVariant: _mutedForeground,
-        tertiary: _muted
+        tertiary: _muted,
+        primaryContainer: Colors.grey.shade500,
       ),
       extensions: <ThemeExtension<dynamic>>[
         MessageColors(
-          current: _lightMessageCurrent,
-          otherColor: _lightMessageOther,
-          currentText: _lightMessageCurrentText,
-          otherText: _lightMessageOtherText,
-          myReplyColor: Color(0xFFE0F2FE), // Light blue-50 for your replies
-          otherReplyColor:Colors.grey.shade300
-        ),
+            current: _lightMessageCurrent,
+            otherColor: _lightMessageOther,
+            currentText: _lightMessageCurrentText,
+            otherText: _lightMessageOtherText,
+            myReplyColor:
+                Colors.blue.shade100, // Light blue-50 for your replies
+            otherReplyColor: Colors.grey.shade300),
       ],
       scaffoldBackgroundColor: Colors.white,
       appBarTheme: AppBarTheme(
@@ -330,17 +331,17 @@ class AppTheme {
         surface: const Color(0xFF0F172A),
         onSurface: Colors.white,
         onSurfaceVariant: _darkMutedForeground,
-        tertiary: _darkMuted
+        tertiary: _darkMuted,
+        primaryContainer: Colors.grey.shade500,
       ),
       extensions: <ThemeExtension<dynamic>>[
         MessageColors(
-          current: _darkMessageCurrent,
-          otherColor: _darkMessageOther,
-          currentText: _darkMessageCurrentText,
-          otherText: _darkMessageOtherText,
-          myReplyColor: Color(0xFF0C4A6E), // Dark blue-900 for your replies
-          otherReplyColor: Colors.blueGrey.shade800
-        ),
+            current: _darkMessageCurrent,
+            otherColor: _darkMessageOther,
+            currentText: _darkMessageCurrentText,
+            otherText: _darkMessageOtherText,
+            myReplyColor: Color(0xFF0C4A6E), // Dark blue-900 for your replies
+            otherReplyColor: Colors.blueGrey.shade800),
       ],
       scaffoldBackgroundColor: const Color(0xFF020617), // Slate-950
       appBarTheme: AppBarTheme(

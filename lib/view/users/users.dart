@@ -1,4 +1,8 @@
 import 'package:chat_web/controller/search_user_provider.dart';
+import 'package:chat_web/controller/selected_room_provider.dart';
+import 'package:chat_web/core/component/loading_widget.dart';
+import 'package:chat_web/core/const/size_const.dart';
+import 'package:chat_web/view/common/user_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/service/chat_service.dart';
@@ -24,42 +28,10 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     super.dispose();
   }
 
-  Widget _buildAvatar(types.User user) {
-    final color = getUserAvatarNameColor(user);
-    final hasImage = user.imageUrl != null;
-    final name = getUserName(user);
-
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: hasImage ? Colors.transparent : color,
-        borderRadius: BorderRadius.circular(8),
-        image: hasImage
-            ? DecorationImage(
-                image: NetworkImage(user.imageUrl!),
-                fit: BoxFit.cover,
-              )
-            : null,
-      ),
-      child: !hasImage
-          ? Center(
-              child: Text(
-                name.isEmpty ? '' : name[0].toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            )
-          : null,
-    );
-  }
-
   void _handlePressed(types.User otherUser, BuildContext context) async {
     final room = await FyreChat.instance.createRoom(otherUser);
     if (!context.mounted) return;
+    ref.read(selectedRoomProvider.notifier).setRoom(room);
     context.go("/chat/${room.id}", extra: room.id);
   }
 
@@ -104,7 +76,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   ),
                   filled: true,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: SizeConst.kHorizontalPadding,
                     vertical: 12,
                   ),
                 ),
@@ -152,7 +124,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     height: 1,
                     thickness: 1,
                     color: isDark
-                        ? Colors.grey[800]!.withValues(alpha:  0.5)
+                        ? Colors.grey[800]!.withValues(alpha: 0.5)
                         : Colors.grey[200],
                   ),
                   itemBuilder: (context, index) {
@@ -169,7 +141,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                               horizontal: 12, vertical: 16),
                           child: Row(
                             children: [
-                              _buildAvatar(user),
+                              UserAvatar(image: user.imageUrl),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
@@ -185,20 +157,6 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                                             : Colors.grey[900],
                                       ),
                                     ),
-                                    // if (user.status != null &&
-                                    //     user.status!.isNotEmpty)
-                                    //   Padding(
-                                    //     padding: const EdgeInsets.only(top: 4),
-                                    //     child: Text(
-                                    //       user.status!,
-                                    //       style: TextStyle(
-                                    //         fontSize: 14,
-                                    //         color: isDark
-                                    //             ? Colors.grey[400]
-                                    //             : Colors.grey[600],
-                                    //       ),
-                                    //     ),
-                                    //   ),
                                   ],
                                 ),
                               ),
@@ -220,7 +178,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 child: SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: LoadingWidget(),
                 ),
               ),
               error: (e, _) => Center(
@@ -228,7 +186,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.error_outline_rounded,
+                      IconlyLight.danger,
                       size: 48,
                       color: Colors.red[400],
                     ),

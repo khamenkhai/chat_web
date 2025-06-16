@@ -1,3 +1,4 @@
+import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -208,10 +209,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: LoadingWidget()
                       )
                     : const Text('Sign In'),
               ),

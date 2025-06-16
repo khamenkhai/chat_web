@@ -1,150 +1,198 @@
+import 'dart:async';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/service/chat_service.dart';
-import 'package:chat_web/view/utils/util.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chat_web/core/component/custom_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
-class ChatRoomTile extends StatelessWidget {
+class ChatRoomTile extends StatefulWidget {
   final types.Room room;
   final void Function(types.Room) onTap;
+  final bool isSelected;
+  final bool isDesktop;
 
   const ChatRoomTile({
     super.key,
     required this.room,
     required this.onTap,
+    required this.isSelected,
+    required this.isDesktop,
   });
 
   @override
+  State<ChatRoomTile> createState() => _ChatRoomTileState();
+}
+
+class _ChatRoomTileState extends State<ChatRoomTile> {
+  // Cache for the last message
+  types.Message? _lastMessage;
+  StreamSubscription<types.Message?>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set up the subscription once when the widget initializes
+    _subscription = FyreChat.instance
+        .lastMessageStream(widget.room.id)
+        .listen((message) {
+      if (mounted) {
+        setState(() {
+          _lastMessage = message;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<types.Message?>(
-      stream: FyreChat.instance.lastMessageStream(room.id),
-      builder: (context, snapshot) {
-        final lastMsg = snapshot.data;
-        final isSeen = lastMsg?.metadata?['seen'] == true;
-        final isDeleted = lastMsg?.isDeleted ?? false;
-
-        String displayText;
-        if (lastMsg is types.TextMessage) {
-          displayText = lastMsg.text;
-        } else if (lastMsg is types.ImageMessage) {
-          displayText = '🖼️ Image';
-        } else if (lastMsg is types.FileMessage) {
-          displayText = '📄 File';
-        } else if (lastMsg == null) {
-          displayText = '...';
-        } else {
-          displayText = 'Unsupported message';
-        }
-
-        return InkWell(
-          onTap: () => onTap(room),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        color: widget.isSelected && widget.isDesktop
+            ? Theme.of(context).colorScheme.primaryContainer.withAlpha(38)
+            : Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withAlpha(13),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: () => widget.onTap(widget.room),
           borderRadius: BorderRadius.circular(10),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              // Add background color or elevation if needed
             ),
-            child: Row(
-              children: [
-                _buildAvatar(room),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            room.name ?? 'Unknown',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            _formatTimeAgo(snapshot.data?.updatedAt ?? 0),
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            isSeen ? Icons.done_all : Icons.done,
-                            size: 12,
-                            color: isSeen
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              isDeleted ? "Deleted" : displayText,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-              ],
-            ),
+            child: _buildContent(),
           ),
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    final lastMsg = _lastMessage;
+    final isSeen = lastMsg?.metadata?['seen'] == true;
+    final isDeleted = lastMsg?.isDeleted ?? false;
+
+    String displayText;
+    if (lastMsg is types.TextMessage) {
+      displayText = lastMsg.text;
+    } else if (lastMsg is types.ImageMessage) {
+      displayText = '🖼️ Image';
+    } else if (lastMsg is types.FileMessage) {
+      displayText = '📄 File';
+    } else if (lastMsg == null) {
+      displayText = 'No messages';
+    } else {
+      displayText = 'Unsupported message';
+    }
+
+    return Row(
+      children: [
+        _buildAvatar(widget.room),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.room.name ?? 'Unknown',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    displayText == "No messages"
+                        ? ""
+                        : _formatTimeAgo(lastMsg?.updatedAt ?? 0),
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelSmall
+                        ?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  displayText == "No messages"
+                      ? Container()
+                      : Icon(
+                          isSeen ? Icons.done_all : Icons.done,
+                          size: 10,
+                          color: isSeen
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                        ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      isDeleted ? "Deleted" : displayText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+      ],
     );
   }
 
   Widget _buildAvatar(types.Room room) {
-    var color = Colors.transparent;
-
-    if (room.type == types.RoomType.direct) {
-      try {
-        final otherUser = room.users
-            .firstWhere((u) => u.id != FirebaseAuth.instance.currentUser?.uid);
-
-        color = getUserAvatarNameColor(otherUser);
-      } catch (e) {
-        // Do nothing if other user is not found.
-      }
-    }
-
-    final hasImage = room.imageUrl != null;
     final name = room.name ?? '';
 
     return CircleAvatar(
-      backgroundColor: hasImage ? Colors.transparent : color,
-      backgroundImage: hasImage ? NetworkImage(room.imageUrl!) : null,
       radius: 20,
-      child: !hasImage
-          ? Text(
-              name.isEmpty ? '' : name[0].toUpperCase(),
-              style: const TextStyle(color: Colors.white),
-            )
-          : null,
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: CachedImage(
+            imageUrl: room.imageUrl ?? "",
+            errorWidget: Center(
+              child: Text(
+                name.isEmpty ? '' : name[0].toUpperCase(),
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -153,9 +201,10 @@ class ChatRoomTile extends StatelessWidget {
     final now = DateTime.now();
     final diff = now.difference(date);
 
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+    if (diff.inDays > 5) {
+      return DateFormat('d/M/yyyy').format(date);
+    }
+
+    return timeago.format(date);
   }
 }

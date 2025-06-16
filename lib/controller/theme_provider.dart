@@ -35,7 +35,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   Future<void> loadTheme() async {
     try {
       // Load saved theme mode (0=system, 1=light, 2=dark)
-      final savedThemeIndex = await _sharedPref.getInt(key: _sharedPref.THEME_KEY);
+      final savedThemeIndex = await _sharedPref.getInt(key: _sharedPref.themeKey);
       final themeMode = ThemeMode.values[savedThemeIndex.clamp(0, 2)];
       
       // Determine if dark mode should be enabled
@@ -69,7 +69,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     );
     _sharedPref.setInt(
       value: themeMode.index,
-      key: _sharedPref.THEME_KEY,
+      key: _sharedPref.themeKey,
     );
   }
 
@@ -84,7 +84,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     );
     _sharedPref.setInt(
       value: mode.index,
-      key: _sharedPref.THEME_KEY,
+      key: _sharedPref.themeKey,
     );
   }
 }
