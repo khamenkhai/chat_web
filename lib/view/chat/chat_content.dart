@@ -94,6 +94,7 @@ class ChatContentState extends State<ChatContent> {
                   child: FirestorePagination(
                     reverse: true,
                     isLive: true,
+                    bottomLoader: LoadingWidget(),
                     padding: EdgeInsets.symmetric(
                       horizontal: _getResponsivePadding(context),
                     ),
@@ -139,14 +140,36 @@ class ChatContentState extends State<ChatContent> {
                       // Process reply metadata if exists
                       _processReplyMetadata(message, room);
 
+                      final isMe = FirebaseAuth.instance.currentUser?.uid ==
+                          message.author.id;
+
+                      // 💡 Calculate showTail:
+                      bool showTail = true;
+                      if (index < docs.length - 1) {
+                        final nextDoc = docs[index + 1];
+                        final nextData = nextDoc.data() as Map<String, dynamic>;
+                        final nextAuthorId = nextData['authorId'] as String?;
+
+                        if (nextAuthorId == message.author.id) {
+                          showTail = false;
+                        }
+                      }
+
                       // Return a widget using the processed message
-                      return _buildMessageBubble(
-                        message.author.id ==
-                            FirebaseAuth.instance.currentUser?.uid,
-                        context,
-                        message,
-                        ref,
-                        false,
+                      return Align(
+                        alignment:
+                            isMe ? Alignment.centerRight : Alignment.centerLeft,
+                        child: MessageBubble(
+                          message: message,
+                          isMe: isMe,
+                          roomId: widget.room.id,
+                          room: widget.room,
+                          metadata: message.metadata,
+                          showTail: showTail, // Pass the parameter
+                          onTap: () {},
+                          onLongPress: () =>
+                              _handleLongPress(context, message, ref, isMe),
+                        ),
                       );
                     },
                   ),
@@ -177,28 +200,6 @@ class ChatContentState extends State<ChatContent> {
       // Desktop
       return 100;
     }
-  }
-
-  Widget _buildMessageBubble(
-    bool isMe,
-    BuildContext context,
-    types.Message message,
-    WidgetRef ref,
-    bool showTail, // Add this parameter
-  ) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: MessageBubble(
-        message: message,
-        isMe: isMe,
-        roomId: widget.room.id,
-        room: widget.room,
-        metadata: message.metadata,
-        showTail: showTail, // Pass the parameter
-        onTap: () {},
-        onLongPress: () => _handleLongPress(context, message, ref, isMe),
-      ),
-    );
   }
 
   void _handleLongPress(
