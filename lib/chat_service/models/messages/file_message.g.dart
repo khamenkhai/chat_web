@@ -15,11 +15,14 @@ FileMessage _$FileMessageFromJson(Map<String, dynamic> json) => FileMessage(
       mimeType: json['mimeType'] as String?,
       name: json['name'] as String,
       remoteId: json['remoteId'] as String?,
+      // repliedMessage: json['repliedMessage'] == null
+      //     ? null
+      //     : Message.fromJson(
+      //         Map<String, dynamic>.from(json['repliedMessage'] as Map),
+      //       ),
       repliedMessage: json['repliedMessage'] == null
           ? null
-          : Message.fromJson(
-              Map<String, dynamic>.from(json['repliedMessage'] as Map),
-            ),
+          : Message.fromJson(WebJsonConverter.toMap(json['repliedMessage'])),
       roomId: json['roomId'] as String?,
       showStatus: json['showStatus'] as bool?,
       size: json['size'] as num,

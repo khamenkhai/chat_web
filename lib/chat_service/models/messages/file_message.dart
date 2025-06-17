@@ -1,3 +1,4 @@
+import 'package:chat_web/core/utils/web_json_converter.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
 

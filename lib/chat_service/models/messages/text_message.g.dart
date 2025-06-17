@@ -22,9 +22,7 @@ TextMessage _$TextMessageFromJson(Map<String, dynamic> json) => TextMessage(
       //       ),
       repliedMessage: json['repliedMessage'] == null
           ? null
-          : Message.fromJson(
-              WebJsonConverter.toMap(json['repliedMessage']),
-            ),
+          : Message.fromJson(WebJsonConverter.toMap(json['repliedMessage'])),
       roomId: json['roomId'] as String?,
       showStatus: json['showStatus'] as bool?,
       status: $enumDecodeNullable(_$StatusEnumMap, json['status']),
@@ -36,10 +34,6 @@ TextMessage _$TextMessageFromJson(Map<String, dynamic> json) => TextMessage(
       reactions: (json['reactions'] as Map<String, dynamic>?)?.map(
         (k, v) => MapEntry(k, v as String),
       ),
-      // reactions: (json['reactions'] as Map<String, dynamic>?)?.map(
-      //   (k, e) =>
-      //       MapEntry(k, (e as List<dynamic>).map((e) => e as String).toList()),
-      // ),
     );
 
 Map<String, dynamic> _$TextMessageToJson(TextMessage instance) {

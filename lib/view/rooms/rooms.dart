@@ -14,8 +14,8 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:skeletonizer/skeletonizer.dart';
 import '../chat/chat.dart';
-// // ignore: avoid_web_libraries_in_flutter
-// import 'dart:html' as html;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 class RoomsPage extends ConsumerStatefulWidget {
   const RoomsPage({super.key});
@@ -70,21 +70,21 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   void initState() {
     super.initState();
     if (kIsWeb) {
-      // html.document.addEventListener(
-      //   'visibilitychange',
-      //   (event) {
-      //     if (html.document.visibilityState == 'visible') {
-      //       setOnline(true);
-      //     } else {
-      //       setOnline(false);
-      //     }
-      //   },
-      // );
+      html.document.addEventListener(
+        'visibilitychange',
+        (event) {
+          if (html.document.visibilityState == 'visible') {
+            setOnline(true);
+          } else {
+            setOnline(false);
+          }
+        },
+      );
 
-      // // Handle window closing
-      // html.window.addEventListener('beforeunload', (event) {
-      //   setOnline(false);
-      // });
+      // Handle window closing
+      html.window.addEventListener('beforeunload', (event) {
+        setOnline(false);
+      });
     }
   }
 
@@ -158,7 +158,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                   children: [
                     GestureDetector(
                       onTap: () {
-                        context.go("/test");
+                        context.go("/profile");
                       },
                       child: CircleAvatar(
                         backgroundColor:
