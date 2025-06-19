@@ -232,7 +232,7 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                         '1',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary,
-                          fontSize: 10,
+                          fontSize: 8,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -288,7 +288,7 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                   name.isEmpty ? '?' : name[0].toUpperCase(),
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

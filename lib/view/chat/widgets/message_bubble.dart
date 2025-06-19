@@ -230,14 +230,14 @@ class MessageBubble extends StatelessWidget {
         itemSize: const Size(28, 28),
         child: myReaction == null
             ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  color:  messageColors.otherColor,
-                  borderRadius: BorderRadius.circular(SizeConst.radius)
+                  // color:  messageColors.otherColor,
+                  borderRadius: BorderRadius.circular(SizeConst.radius /1.5)
                 ),
                 child: Icon(
-                  CupertinoIcons.smiley,
-                  size: 16,
+                  CupertinoIcons.hand_thumbsup,
+                  size: 14,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               )

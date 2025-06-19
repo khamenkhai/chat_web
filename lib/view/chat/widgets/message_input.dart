@@ -260,6 +260,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
               final isImageUploading = ref.watch(imageUploadingProvider);
 
               return Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   isAttachmentUploading
                       ? const LoadingWidget()
@@ -271,18 +272,22 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                           onPressed: _handleFileSelection,
                         ),
                   isImageUploading
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
+                      ? Center(
+                        child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                            ),
+                            child: const LoadingWidget()),
+                      )
+                      : Center(
+                        child: IconButton(
+                            icon: Icon(
+                              IconlyLight.image_2,
+                              color: Theme.of(context).disabledColor,
+                            ),
+                            onPressed: () => _handleImageSelection(context),
                           ),
-                          child: const LoadingWidget())
-                      : IconButton(
-                          icon: Icon(
-                            IconlyLight.image_2,
-                            color: Theme.of(context).disabledColor,
-                          ),
-                          onPressed: () => _handleImageSelection(context),
-                        ),
+                      ),
                   Expanded(
                     child: KeyboardListener(
                       focusNode: FocusNode(),
@@ -302,9 +307,13 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                               ..resetText()
                               ..hideEmojiKeyboard();
                           }
+
+                          _focusNode.unfocus();
                         }
                       },
                       child: TextField(
+                        maxLines: 5,
+                        minLines: 1,
                         controller: _textController,
                         focusNode: _focusNode,
                         onChanged: (value) {

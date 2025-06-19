@@ -155,6 +155,9 @@ class ChatContentState extends State<ChatContent> {
                         }
                       }
 
+                      FyreChat.instance
+                          .markMessageAsSeen(widget.room.id, message.id);
+
                       // Return a widget using the processed message
                       return Align(
                         alignment:

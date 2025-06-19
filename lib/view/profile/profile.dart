@@ -1,13 +1,14 @@
 import 'package:chat_web/chat_service/models/message_models.dart' as mm;
-import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:chat_web/controller/profile_provider.dart';
-import 'package:chat_web/core/utils/format_last_seen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:chat_web/core/component/loading_widget.dart';
-import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+import 'dart:convert';
 
 class ProfileUpdatePage extends ConsumerStatefulWidget {
   const ProfileUpdatePage({super.key});
@@ -20,8 +21,9 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
-
-  bool switchValue = false;
+  String? _selectedImageData; // Will store base64 encoded image for web
+  String? _imageUrl;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -37,6 +39,46 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setState(() {
+        _selectedImageData = base64Encode(bytes);
+      });
+    }
+  }
+
+  Future<String?> _uploadImage() async {
+    if (_selectedImageData == null) return null;
+
+    setState(() => _isUploading = true);
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_images/${DateTime.now().millisecondsSinceEpoch}');
+      
+      // Convert base64 to blob for web upload
+      final blob = html.Blob([base64Decode(_selectedImageData!)]);
+      final uploadTask = storageRef.putBlob(blob);
+      final snapshot = await uploadTask.whenComplete(() {});
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      setState(() => _isUploading = false);
+      return downloadUrl;
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading image: $e')),
+        );
+      }
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final profileState = ref.watch(profileControllerProvider);
@@ -46,13 +88,21 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
       if (user != null) {
         _firstNameController.text = user.firstName ?? '';
         _lastNameController.text = user.lastName ?? '';
+        _imageUrl = user.imageUrl;
       }
     });
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Update Profile'),
+        title: const Text('Profile Settings'),
         centerTitle: true,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(IconlyLight.close_square),
+            onPressed: () => context.go("/"),
+          ),
+        ],
       ),
       body: profileState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -68,24 +118,14 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height - 200,
-        ),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 600),
-            decoration: BoxDecoration(
-              color: context.cardColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  offset: const Offset(0, 2),
-                  blurRadius: 10,
-                  color: Theme.of(context).shadowColor.withAlpha(25),
-                ),
-              ],
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Padding(
               padding: const EdgeInsets.all(32),
@@ -93,97 +133,13 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                 key: _formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundImage: user.imageUrl != null
-                              ? NetworkImage(user.imageUrl!)
-                              : null,
-                          child: user.imageUrl == null
-                              ? const Icon(IconlyLight.profile, size: 60)
-                              : null,
-                        ),
-                        IconButton.filled(
-                          onPressed: () => ref
-                              .read(profileControllerProvider.notifier)
-                              .uploadImage(),
-                          style:
-                              FilledButton.styleFrom(padding: EdgeInsets.zero),
-                          icon: Icon(
-                            IconlyLight.edit,
-                            size: 16,
-                            color: context.cardColor,
-                          ),
-                        ),
-                      ],
-                    ),
+                    _buildProfilePicture(user),
                     const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _firstNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'First Name',
-                        prefixIcon: Icon(IconlyLight.profile),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your first name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _lastNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Last Name',
-                        prefixIcon: Icon(IconlyLight.profile),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Switch(
-                        value: switchValue,
-                        onChanged: (value) {
-                          setOnline(value);
-                          setState(() {
-                            switchValue = value;
-                          });
-                        }),
-                    FutureBuilder(
-                      future: FyreChat.instance.getUserById(
-                          FirebaseAuth.instance.currentUser?.uid ?? ""),
-                      builder: (context, snapshot) {
-                        final bool isOnline = snapshot.data?.isOnline ?? false;
-                        return Text(
-                          isOnline
-                              ? "Active Now"
-                              : formatLastSeen(snapshot.data?.lastSeen),
-                          style: const TextStyle(fontSize: 12, height: 0),
-                        );
-                      },
-                    ),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: profileState.isLoading
-                          ? const LoadingWidget()
-                          : FilledButton(
-                              onPressed: _submitForm,
-                              style: FilledButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Save Changes',
-                                style: TextStyle(fontSize: 14),
-                              ),
-                            ),
-                    ),
+                    _buildNameFields(),
+                    const SizedBox(height: 24),
+                    _buildSaveButton(profileState),
                   ],
                 ),
               ),
@@ -194,29 +150,151 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
     );
   }
 
-  Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        await ref.read(profileControllerProvider.notifier).updateProfile(
-              firstName: _firstNameController.text,
-              lastName: _lastNameController.text,
-            );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile updated successfully')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error updating profile: $e')),
-          );
-        }
-      }
-    }
+  Widget _buildProfilePicture(mm.User user) {
+    return Center(
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                width: 2,
+              ),
+            ),
+            child: ClipOval(
+              child: _selectedImageData != null
+                  ? Image.memory(
+                      base64Decode(_selectedImageData!),
+                      fit: BoxFit.cover,
+                    )
+                  : _imageUrl != null
+                      ? Image.network(_imageUrl!, fit: BoxFit.cover)
+                      : Icon(
+                          IconlyLight.profile,
+                          size: 60,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            padding: const EdgeInsets.all(8),
+            child: IconButton(
+              icon: const Icon(IconlyLight.camera, size: 20),
+              color: Colors.white,
+              onPressed: _isUploading ? null : _pickImage,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  void setOnline(bool online) {
-    FyreChat.instance.setOnline(online);
+  Widget _buildNameFields() {
+    return Column(
+      children: [
+        TextFormField(
+          controller: _firstNameController,
+          decoration: InputDecoration(
+            labelText: 'First Name',
+            prefixIcon: const Icon(IconlyLight.profile),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter your first name';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _lastNameController,
+          decoration: InputDecoration(
+            labelText: 'Last Name',
+            prefixIcon: const Icon(IconlyLight.profile),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSaveButton(profileState) {
+    return SizedBox(
+      height: 50,
+      child: ElevatedButton(
+        onPressed: _isUploading ? null : _submitForm,
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+        child: _isUploading || profileState.isLoading
+            ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation(Colors.white),
+              )
+            : const Text(
+                'Save Changes',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      setState(() => _isUploading = true);
+      
+      // Upload image if selected
+      final imageUrl = _selectedImageData != null 
+          ? await _uploadImage() 
+          : _imageUrl;
+
+      // Update profile
+      await ref.read(profileControllerProvider.notifier).updateProfile(
+        firstName: _firstNameController.text,
+        lastName: _lastNameController.text,
+        imageUrl: imageUrl,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go("/");
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isUploading = false);
+    }
   }
 }

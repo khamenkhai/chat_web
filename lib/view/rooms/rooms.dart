@@ -170,7 +170,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     return Container(
       width: isMobile ? double.infinity : 340,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        // color: Theme.of(context).colorScheme.surface,
         border: isMobile
             ? null
             : Border(
@@ -188,8 +188,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
             child: Column(
               children: [
                 _buildUserProfileSection(),
-                const SizedBox(height: 16),
-                _buildAppBar(),
+            
                 const SizedBox(height: 12),
                 _buildSearchField(),
               ],
@@ -308,71 +307,8 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                   ],
                 ),
               ),
-            ],
-          );
-        } else {
-          return SizedBox(
-            height: 36,
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        height: 12,
-                        width: 100,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Container(
-                        height: 10,
-                        width: 50,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-      },
-    );
-  }
 
-  Widget _buildChatArea() {
-    return Expanded(
-      child: ref.watch(selectedRoomProvider) == null
-          ? const RoomsEmpty()
-          : const ChatPage(roomId: ""),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Row(
-      children: [
-        Text(
-          'Messages',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        const Spacer(),
-        Container(
+              Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.4),
             borderRadius: BorderRadius.circular(8),
@@ -436,7 +372,56 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
             ],
           ),
         ),
-      ],
+            ],
+          );
+        } else {
+          return SizedBox(
+            height: 36,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        height: 12,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Container(
+                        height: 10,
+                        width: 50,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildChatArea() {
+    return Expanded(
+      child: ref.watch(selectedRoomProvider) == null
+          ? const RoomsEmpty()
+          : const ChatPage(roomId: ""),
     );
   }
 
@@ -458,7 +443,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
             ),
             const SizedBox(width: 8),
             Text(
-              "Search conversations...",
+              "Search users...",
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,

@@ -13,7 +13,6 @@ class ProfileController extends StateNotifier<AsyncValue<mm.User?>> {
   }
 
   final chatService = FyreChat.instance;
-  String? _imageUrl;
 
   Future<void> loadUserData() async {
     state = const AsyncValue.loading();
@@ -21,7 +20,6 @@ class ProfileController extends StateNotifier<AsyncValue<mm.User?>> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final userData = await chatService.getUserById(user.uid);
-        _imageUrl = userData?.imageUrl;
         state = AsyncValue.data(userData);
       } else {
         state = const AsyncValue.data(null);
@@ -34,6 +32,7 @@ class ProfileController extends StateNotifier<AsyncValue<mm.User?>> {
   Future<void> updateProfile({
     required String firstName,
     required String lastName,
+     String? imageUrl,
   }) async {
     final currentUser = state.value;
     if (currentUser == null) return;
@@ -44,7 +43,7 @@ class ProfileController extends StateNotifier<AsyncValue<mm.User?>> {
         userId: currentUser.id,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        imageUrl: _imageUrl,
+        imageUrl: imageUrl,
       );
       await loadUserData(); // Refresh the data
     } catch (e, st) {
@@ -56,6 +55,5 @@ class ProfileController extends StateNotifier<AsyncValue<mm.User?>> {
   Future<void> uploadImage() async {
     // Simulate image upload
     await Future.delayed(const Duration(seconds: 1));
-    _imageUrl = 'https://i.pravatar.cc/300?u=${state.value?.id}';
   }
 }
