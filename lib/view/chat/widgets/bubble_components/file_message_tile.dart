@@ -25,7 +25,7 @@ class FileMessageTile extends StatelessWidget {
             children: [
               Container(
                 // width: (message.name.length.toDouble() * 3),
-                constraints: BoxConstraints(
+                constraints: const BoxConstraints(
                   maxWidth: 175
                 ),
                 child: Text(

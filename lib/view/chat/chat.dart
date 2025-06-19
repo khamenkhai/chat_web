@@ -77,7 +77,7 @@ class ChatPage extends StatelessWidget {
       appBar: AppBar(
         toolbarHeight: 60,
         title: ListTile(
-          contentPadding: EdgeInsets.all(0),
+          contentPadding: const EdgeInsets.all(0),
           minVerticalPadding: 1,
           leading: UserAvatar(room: room),
           title: Text(room.name ?? ""),
@@ -94,15 +94,15 @@ class ChatPage extends StatelessWidget {
                 isOnline
                     ? "Active Now"
                     : formatLastSeen(snapshot.data?.lastSeen),
-                style: TextStyle(fontSize: 12, height: 0),
+                style: const TextStyle(fontSize: 12, height: 0),
               );
             },
           ),
         ),
         leadingWidth: 0,
-        actions: [
+        actions: const [
           ThemeSwitch(),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
         ],
         surfaceTintColor: Colors.transparent,
       ),

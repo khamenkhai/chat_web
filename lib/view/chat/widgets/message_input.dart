@@ -262,7 +262,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
               return Row(
                 children: [
                   isAttachmentUploading
-                      ? LoadingWidget()
+                      ? const LoadingWidget()
                       : IconButton(
                           icon: Icon(
                             IconlyLight.folder,
@@ -272,10 +272,10 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                         ),
                   isImageUploading
                       ? Container(
-                          padding: EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 5,
                           ),
-                          child: LoadingWidget())
+                          child: const LoadingWidget())
                       : IconButton(
                           icon: Icon(
                             IconlyLight.image_2,
@@ -403,7 +403,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                   backspaceColor: Theme.of(context).colorScheme.primary,
                   indicatorColor: Theme.of(context).colorScheme.primary,
                 ),
-                skinToneConfig: SkinToneConfig(
+                skinToneConfig: const SkinToneConfig(
                   enabled: true,
                 ),
                 bottomActionBarConfig: BottomActionBarConfig(

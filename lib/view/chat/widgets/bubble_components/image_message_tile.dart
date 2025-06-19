@@ -26,7 +26,7 @@ class ImageMessageTile extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.arrow_back,
                     color: Colors.white,
                   ),
@@ -46,9 +46,9 @@ class ImageMessageTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 5),
         child: ClipRRect(
-          borderRadius: BorderRadius.only(
-            bottomLeft: const Radius.circular(12),
-            bottomRight: const Radius.circular(12),
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(12),
+            bottomRight: Radius.circular(12),
             topLeft: Radius.circular(12),
             topRight: Radius.circular(12),
           ),

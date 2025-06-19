@@ -94,11 +94,11 @@ class ChatContentState extends State<ChatContent> {
                   child: FirestorePagination(
                     reverse: true,
                     isLive: true,
-                    bottomLoader: LoadingWidget(),
+                    bottomLoader: const LoadingWidget(),
                     padding: EdgeInsets.symmetric(
                       horizontal: _getResponsivePadding(context),
                     ),
-                    initialLoader: LoadingWidget(),
+                    initialLoader: const LoadingWidget(),
                     limit: 10,
                     query: FirebaseFirestore.instance
                         .collection(
@@ -178,7 +178,7 @@ class ChatContentState extends State<ChatContent> {
                 if (isAttachmentUploading) const LoadingWidget(),
 
                 /// message input box
-                MessageInput(),
+                const MessageInput(),
               ],
             );
           },

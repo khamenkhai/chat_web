@@ -162,7 +162,7 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
                           isOnline
                               ? "Active Now"
                               : formatLastSeen(snapshot.data?.lastSeen),
-                          style: TextStyle(fontSize: 12, height: 0),
+                          style: const TextStyle(fontSize: 12, height: 0),
                         );
                       },
                     ),

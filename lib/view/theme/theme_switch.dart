@@ -42,30 +42,30 @@ class SunMoonThemeSelector extends ConsumerWidget {
         ref.read(themeProvider.notifier).setThemeMode(mode);
       },
       itemBuilder: (context) => [
-        PopupMenuItem(
+        const PopupMenuItem(
           value: ThemeMode.system,
           child: Row(
-            children: const [
+            children: [
               Icon(Icons.settings_suggest_outlined),
               SizedBox(width: 8),
               Text('System Theme'),
             ],
           ),
         ),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: ThemeMode.light,
           child: Row(
-            children: const [
+            children: [
               Icon(IconlyLight.info_circle, color: Colors.amber),
               SizedBox(width: 8),
               Text('Light Mode'),
             ],
           ),
         ),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: ThemeMode.dark,
           child: Row(
-            children: const [
+            children: [
               Icon(Icons.nightlight_round, color: Colors.indigo),
               SizedBox(width: 8),
               Text('Dark Mode'),

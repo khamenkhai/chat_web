@@ -80,7 +80,7 @@ class AuthController extends StateNotifier<AuthState> {
     } on FirebaseAuthException catch (e) {
       state = AuthError(e.message ?? 'Sign up failed');
     } catch (e) {
-      state = AuthError('An unexpected error occurred');
+      state = const AuthError('An unexpected error occurred');
     }
   }
 
@@ -93,7 +93,7 @@ class AuthController extends StateNotifier<AuthState> {
       state = const AuthLoading();
       await authService.signOut();
     } catch (e) {
-      state = AuthError('Sign out failed');
+      state = const AuthError('Sign out failed');
     }
   }
 }

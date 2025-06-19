@@ -125,14 +125,14 @@ class MessageBubble extends StatelessWidget {
             : messageColors.otherColor,
         borderRadius: showTail
             ? BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-                topLeft: isMe ? Radius.circular(12) : Radius.circular(0),
-                topRight: !isMe ? Radius.circular(12) : Radius.circular(0),
+                bottomLeft: const Radius.circular(12),
+                bottomRight: const Radius.circular(12),
+                topLeft: isMe ? const Radius.circular(12) : const Radius.circular(0),
+                topRight: !isMe ? const Radius.circular(12) : const Radius.circular(0),
               )
             : _bubbleBorderRadius(),
       ),
-      constraints: BoxConstraints(maxWidth: 300),
+      constraints: const BoxConstraints(maxWidth: 300),
       child: IntrinsicWidth(
         child: Column(
           crossAxisAlignment:
@@ -206,8 +206,8 @@ class MessageBubble extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: EdgeInsets.all(1),
-            decoration: BoxDecoration(),
+            padding: const EdgeInsets.all(1),
+            decoration: const BoxDecoration(),
             child: _reactionButtons(myReaction, isMe),
           ),
           if (isMe)
@@ -223,7 +223,7 @@ class MessageBubble extends StatelessWidget {
               builder: (context, snapshot) {
                 return Text(
                   snapshot.data ?? "",
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                   ),
                 );
@@ -246,7 +246,7 @@ class MessageBubble extends StatelessWidget {
           emoji: reaction?.value ?? "",
         );
       },
-      reactions: <Reaction<String>>[
+      reactions: const <Reaction<String>>[
         Reaction<String>(
           value: '👍',
           icon: Text(
@@ -298,7 +298,7 @@ class MessageBubble extends StatelessWidget {
       child: myReaction == null
           ? isMe
               ? Container()
-              : Icon(
+              : const Icon(
                   CupertinoIcons.smiley,
                   size: 16,
                 )
@@ -316,8 +316,8 @@ class MessageBubble extends StatelessWidget {
         color:
             isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
         borderRadius: BorderRadius.only(
-          topRight: showTail && isMe ? Radius.circular(0) : Radius.circular(12),
-          topLeft: showTail && !isMe ? Radius.circular(0) : Radius.circular(12),
+          topRight: showTail && isMe ? const Radius.circular(0) : const Radius.circular(12),
+          topLeft: showTail && !isMe ? const Radius.circular(0) : const Radius.circular(12),
         ),
       ),
       child: Column(
@@ -364,14 +364,14 @@ class MessageBubble extends StatelessWidget {
       );
     } else if (message is types.FileMessage) {
       return Container(
-        constraints: BoxConstraints(maxWidth: 175),
+        constraints: const BoxConstraints(maxWidth: 175),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(IconlyLight.document, size: 16),
             const SizedBox(width: 4),
             Container(
-              constraints: BoxConstraints(maxWidth: 150),
+              constraints: const BoxConstraints(maxWidth: 150),
               child: Text(
                 message.name,
                 maxLines: 1,
@@ -473,9 +473,9 @@ class MessageBubble extends StatelessWidget {
   }
 
   BorderRadius _bubbleBorderRadius() {
-    return BorderRadius.only(
-      bottomLeft: const Radius.circular(12),
-      bottomRight: const Radius.circular(12),
+    return const BorderRadius.only(
+      bottomLeft: Radius.circular(12),
+      bottomRight: Radius.circular(12),
       topLeft: Radius.circular(12),
       topRight: Radius.circular(12),
     );

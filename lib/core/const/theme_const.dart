@@ -263,7 +263,7 @@ class AppTheme {
           return const Color(0xFFE2E8F0);
         }),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
         selectedItemColor: _primary,
         unselectedItemColor: _mutedForeground,
@@ -340,7 +340,7 @@ class AppTheme {
             otherColor: _darkMessageOther,
             currentText: _darkMessageCurrentText,
             otherText: _darkMessageOtherText,
-            myReplyColor: Color(0xFF0C4A6E), // Dark blue-900 for your replies
+            myReplyColor: const Color(0xFF0C4A6E), // Dark blue-900 for your replies
             otherReplyColor: Colors.blueGrey.shade800),
       ],
       scaffoldBackgroundColor: const Color(0xFF020617), // Slate-950
@@ -483,8 +483,8 @@ class AppTheme {
           return const Color(0xFF334155); // Slate-700
         }),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: const Color(0xFF0F172A),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF0F172A),
         selectedItemColor: _darkPrimary,
         unselectedItemColor: _darkMutedForeground,
         elevation: 0,
