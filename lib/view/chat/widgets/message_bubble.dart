@@ -1,8 +1,10 @@
-// ignore: avoid_web_libraries_in_flutter
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
+import 'package:chat_web/core/const/size_const.dart';
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:chat_web/view/chat/widgets/bubble_components/deleted_message_tile.dart';
+import 'package:chat_web/view/chat/widgets/bubble_components/file_message_tile.dart';
 import 'package:chat_web/view/chat/widgets/bubble_components/image_message_tile.dart';
 import 'package:chat_web/view/common/user_avatar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,7 +12,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_reaction_button/flutter_reaction_button.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/service/chat_service.dart';
-import 'package:chat_web/view/chat/widgets/bubble_components/file_message_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
@@ -39,7 +40,6 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     if (message.isDeleted ?? false) {
       return DeletedMessageTile(
         isMe: isMe,
@@ -53,62 +53,80 @@ class MessageBubble extends StatelessWidget {
     final theme = Theme.of(context);
     final messageColors = theme.extension<MessageColors>()!;
 
-    return Padding(
-      padding: messagePadding,
+    return Container(
+      margin: _messagePadding,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment:
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          /// other user avatar
-          (!isMe && showTail)
-              ? SizedBox(
-                  width: 40,
-                  child: Row(
-                    children: [
-                      UserAvatar(
-                        room: room,
-                        size: 30,
-                      ),
-                    ],
-                  ),
-                )
-              : Container(width: 40),
-          GestureDetector(
-            onTap: () => _handleMessageTap(context),
-            onLongPress: onLongPress,
-            child: Row(
-              children: [
-                if (isMe) _buildLikeButton(context: context, isMe: isMe),
-                _buildMessageContentContainer(messageColors, theme, context),
-                if (!isMe) _buildLikeButton(context: context, isMe: false),
-              ],
-            ),
+          // Other user avatar - smaller and cleaner
+          if (!isMe) _buildOtherUserAvatar(),
+
+          // Message content with reactions
+          Flexible(
+            child: _buildMessageWithReactions(context, messageColors, theme),
           ),
 
-          /// my user avatar
-          // (isMe && showTail)
-          //     ? SizedBox(
-          //         width: 40,
-          //         child: Row(
-          //           children: [
-          //             const SizedBox(width: 10),
-          //             UserAvatar(
-          //               room: room,
-          //               image: room.users
-          //                   .where((e) =>
-          //                       e.id == FirebaseAuth.instance.currentUser!.uid)
-          //                   .first
-          //                   .imageUrl,
-          //               size: 30,
-          //             ),
-          //           ],
-          //         ),
-          //       )
-          //     : Container(width: 40),
+          // Spacing for alignment
+          if (isMe) const SizedBox(width: 4),
         ],
       ),
+    );
+  }
+
+  Widget _buildOtherUserAvatar() {
+    return Container(
+      width: 28,
+      height: 28,
+      margin: const EdgeInsets.only(right: 6, bottom: 2),
+      child: showTail
+          ? UserAvatar(
+              room: room,
+              size: 24,
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildMessageWithReactions(
+    BuildContext context,
+    MessageColors messageColors,
+    ThemeData theme,
+  ) {
+    return Column(
+      crossAxisAlignment:
+          isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Reaction button for received messages - smaller
+            if (isMe) _buildReactionButton(context, isLeft: true, messageColors: messageColors),
+
+            // Message bubble
+            Flexible(
+              child: GestureDetector(
+                onTap: () => _handleMessageTap(context),
+                onLongPress: onLongPress,
+                child: _buildMessageContentContainer(
+                  messageColors,
+                  theme,
+                  context,
+                ),
+              ),
+            ),
+
+            // Reaction button for sent messages - smaller
+            if (!isMe) _buildReactionButton(context, isLeft: false,messageColors: messageColors),
+          ],
+        ),
+
+        // Other user's reaction display - more compact
+        if (isMe) _buildOtherUserReaction(),
+      ],
     );
   }
 
@@ -117,38 +135,154 @@ class MessageBubble extends StatelessWidget {
     ThemeData theme,
     BuildContext context,
   ) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 1000),
+    return Container(
       decoration: BoxDecoration(
         color: isMe
-            ? messageColors.current.withValues(alpha: 0.2)
+            ? messageColors.current.withValues(alpha: 0.12)
             : messageColors.otherColor,
-        borderRadius: showTail
-            ? BorderRadius.only(
-                bottomLeft: const Radius.circular(12),
-                bottomRight: const Radius.circular(12),
-                topLeft: isMe ? const Radius.circular(12) : const Radius.circular(0),
-                topRight: !isMe ? const Radius.circular(12) : const Radius.circular(0),
+        borderRadius: _getBubbleBorderRadius(),
+      ),
+      constraints: const BoxConstraints(maxWidth: 280),
+      child: Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Reply widget
+          if (message.repliedMessage != null)
+            _buildReplyWidget(theme, message.repliedMessage!),
+
+          // Message content
+          _buildMessageContent(theme, context),
+
+          // Message status and time
+          _buildMessageFooter(theme, context),
+        ],
+      ),
+    );
+  }
+
+  BorderRadius _getBubbleBorderRadius() {
+    const radius = Radius.circular(14);
+    const smallRadius = Radius.circular(3);
+
+    if (showTail) {
+      return BorderRadius.only(
+        bottomLeft: radius,
+        bottomRight: radius,
+        topLeft: isMe ? radius : smallRadius,
+        topRight: isMe ? smallRadius : radius,
+      );
+    }
+    return BorderRadius.circular(14);
+  }
+
+  Widget _buildReactionButton(BuildContext context, {required bool isLeft,required MessageColors messageColors}) {
+    final String? myReaction = _getMyReaction(
+        message.reactions, FirebaseAuth.instance.currentUser?.uid ?? "");
+
+    return Container(
+      margin: EdgeInsets.only(
+        left: isLeft ? 0 : 4,
+        right: isLeft ? 4 : 0,
+        bottom: 2,
+      ),
+      child: ReactionButton<String>(
+        toggle: false,
+        direction: isMe ? ReactionsBoxAlignment.rtl : ReactionsBoxAlignment.ltr,
+        onReactionChanged: (Reaction<String>? reaction) {
+          FyreChat.instance.reactToMessage(
+            roomId: roomId,
+            messageId: message.id,
+            emoji: reaction?.value ?? "",
+          );
+        },
+        reactions: const <Reaction<String>>[
+          Reaction<String>(
+            value: '👍',
+            icon: Text('👍', style: TextStyle(fontSize: 16)),
+          ),
+          Reaction<String>(
+            value: '💙',
+            icon: Text('💙', style: TextStyle(fontSize: 16)),
+          ),
+          Reaction<String>(
+            value: '😂',
+            icon: Text('😂', style: TextStyle(fontSize: 16)),
+          ),
+          Reaction<String>(
+            value: '😮',
+            icon: Text('😮', style: TextStyle(fontSize: 16)),
+          ),
+          Reaction<String>(
+            value: '😢',
+            icon: Text('😢', style: TextStyle(fontSize: 16)),
+          ),
+          Reaction<String>(
+            value: '😡',
+            icon: Text('😡', style: TextStyle(fontSize: 16)),
+          ),
+        ],
+        boxElevation: 4,
+        boxColor: Theme.of(context).colorScheme.surface,
+        boxRadius: 20,
+        itemsSpacing: 6,
+        itemSize: const Size(28, 28),
+        child: myReaction == null
+            ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                decoration: BoxDecoration(
+                  color:  messageColors.otherColor,
+                  borderRadius: BorderRadius.circular(SizeConst.radius)
+                ),
+                child: Icon(
+                  CupertinoIcons.smiley,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               )
-            : _bubbleBorderRadius(),
+            : Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: messageColors.otherColor,
+                 borderRadius: BorderRadius.circular(SizeConst.radius)
+                ),
+                child: Text(
+                  myReaction,
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
       ),
-      constraints: const BoxConstraints(maxWidth: 300),
-      child: IntrinsicWidth(
-        child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // if (!isMe) _buildSenderName(theme),
-            if (message.repliedMessage != null)
-              _buildReplyWidget(theme, message.repliedMessage!),
-            if (message is! types.FileMessage) const SizedBox(height: 5),
-            _buildMessageContent(theme, context),
-            _buildMessageStatus(theme, context),
-            const SizedBox(height: 5),
-          ],
-        ),
+    );
+  }
+
+  Widget _buildOtherUserReaction() {
+    return FutureBuilder<String?>(
+      future: FyreChat.instance.getOtherReaction(
+        roomId: roomId,
+        messageId: message.id,
+        otherUserId: room.users
+            .firstWhere((e) => e.id != FirebaseAuth.instance.currentUser?.uid)
+            .id,
       ),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          return Container(
+            margin: const EdgeInsets.only(top: 2, right: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color:
+                  Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              snapshot.data!,
+              style: const TextStyle(fontSize: 12),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
@@ -164,8 +298,23 @@ class MessageBubble extends StatelessWidget {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Downloading ${fileMessage.name}...'),
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 1.5),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Downloading ${fileMessage.name}...',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ],
+          ),
           duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
 
@@ -180,130 +329,32 @@ class MessageBubble extends StatelessWidget {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to download file: ${e.toString()}'),
+          content: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Theme.of(context).colorScheme.onError,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Download failed',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     }
   }
 
-  String? getMyReaction(Map<String, String>? reactions, String myUserId) {
+  String? _getMyReaction(Map<String, String>? reactions, String myUserId) {
     return reactions?[myUserId];
-  }
-
-  Widget _buildLikeButton({
-    required BuildContext context,
-    required bool isMe,
-  }) {
-    final String? myReaction = getMyReaction(
-        message.reactions, FirebaseAuth.instance.currentUser?.uid ?? "");
-    return Container(
-      margin: EdgeInsets.only(
-        left: isMe ? 0 : 10,
-        right: !isMe ? 0 : 10,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(1),
-            decoration: const BoxDecoration(),
-            child: _reactionButtons(myReaction, isMe),
-          ),
-          if (isMe)
-            FutureBuilder(
-              future: FyreChat.instance.getOtherReaction(
-                roomId: roomId,
-                messageId: message.id,
-                otherUserId: room.users
-                    .firstWhere(
-                        (e) => e.id != FirebaseAuth.instance.currentUser?.uid)
-                    .id,
-              ),
-              builder: (context, snapshot) {
-                return Text(
-                  snapshot.data ?? "",
-                  style: const TextStyle(
-                    fontSize: 12,
-                  ),
-                );
-              },
-            )
-        ],
-      ),
-    );
-  }
-
-  ReactionButton<String> _reactionButtons(String? myReaction, bool isMe) {
-    return ReactionButton<String>(
-      toggle: false,
-      direction: ReactionsBoxAlignment.rtl,
-      onReactionChanged: (Reaction<String>? reaction) {
-        // Handle selected reaction
-        FyreChat.instance.reactToMessage(
-          roomId: roomId,
-          messageId: message.id,
-          emoji: reaction?.value ?? "",
-        );
-      },
-      reactions: const <Reaction<String>>[
-        Reaction<String>(
-          value: '👍',
-          icon: Text(
-            '👍',
-            style: TextStyle(fontSize: 16),
-          ),
-        ),
-        Reaction<String>(
-          value: '💙',
-          icon: Text(
-            '💙',
-            style: TextStyle(fontSize: 16),
-          ),
-        ),
-        Reaction<String>(
-          value: '😂',
-          icon: Text(
-            '😂',
-            style: TextStyle(fontSize: 16),
-          ),
-        ),
-        Reaction<String>(
-          value: '😮',
-          icon: Text(
-            '😮',
-            style: TextStyle(fontSize: 16),
-          ),
-        ),
-        Reaction<String>(
-          value: '😢',
-          icon: Text(
-            '😢',
-            style: TextStyle(fontSize: 16),
-          ),
-        ),
-        Reaction<String>(
-          value: '😡',
-          icon: Text(
-            '😡',
-            style: TextStyle(fontSize: 16),
-          ),
-        ),
-      ],
-      boxElevation: 1,
-      boxColor: Colors.white,
-      boxRadius: 30,
-      itemsSpacing: 12,
-      itemSize: const Size(25, 25),
-      child: myReaction == null
-          ? isMe
-              ? Container()
-              : const Icon(
-                  CupertinoIcons.smiley,
-                  size: 16,
-                )
-          : Text(myReaction),
-    );
   }
 
   Widget _buildReplyWidget(ThemeData theme, types.Message repliedMessage) {
@@ -311,33 +362,38 @@ class MessageBubble extends StatelessWidget {
     final isReplyFromMe = repliedMessage.author.id == message.author.id;
 
     return Container(
+      margin: const EdgeInsets.fromLTRB(8, 8, 8, 0),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color:
-            isMe ? messageColors.myReplyColor : messageColors.otherReplyColor,
-        borderRadius: BorderRadius.only(
-          topRight: showTail && isMe ? const Radius.circular(0) : const Radius.circular(12),
-          topLeft: showTail && !isMe ? const Radius.circular(0) : const Radius.circular(12),
-        ),
+        color: isMe
+            ? messageColors.myReplyColor.withOpacity(0.6)
+            : messageColors.otherReplyColor.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.subdirectory_arrow_right, size: 12),
-              const SizedBox(width: 10),
+              Icon(
+                Icons.reply_rounded,
+                size: 12,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 4),
               Text(
                 isReplyFromMe
-                    ? 'yourself'
+                    ? 'You'
                     : repliedMessage.author.firstName ?? 'User',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                  fontSize: 11,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           _buildReplyContent(repliedMessage, theme),
         ],
       ),
@@ -351,52 +407,53 @@ class MessageBubble extends StatelessWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.bodySmall?.copyWith(
-          fontStyle: FontStyle.italic,
+          color: theme.colorScheme.onSurfaceVariant,
+          fontSize: 11,
+          height: 1.2,
         ),
       );
     } else if (message is types.ImageMessage) {
-      return const Row(
+      return Row(
         children: [
-          Icon(IconlyLight.image, size: 16),
-          SizedBox(width: 4),
-          Text('Photo'),
+          Icon(
+            IconlyLight.image,
+            size: 12,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Photo',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 11,
+            ),
+          ),
         ],
       );
     } else if (message is types.FileMessage) {
-      return Container(
-        constraints: const BoxConstraints(maxWidth: 175),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(IconlyLight.document, size: 16),
-            const SizedBox(width: 4),
-            Container(
-              constraints: const BoxConstraints(maxWidth: 150),
-              child: Text(
-                message.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+      return Row(
+        children: [
+          Icon(
+            IconlyLight.document,
+            size: 12,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              message.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 11,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
     return const SizedBox.shrink();
-  }
-
-  // ignore: unused_element
-  Widget _buildSenderName(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: Text(
-        message.author.firstName ?? 'Unknown',
-        style: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
   }
 
   Widget _buildMessageContent(ThemeData theme, BuildContext context) {
@@ -407,28 +464,39 @@ class MessageBubble extends StatelessWidget {
     } else if (message is types.FileMessage) {
       return FileMessageTile(message: message as types.FileMessage);
     }
-    return const Text('Unsupported message type');
-  }
-
-  Widget _buildTextMessage(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    return Container(
+      padding: const EdgeInsets.all(12),
       child: Text(
-        (message as types.TextMessage).text,
-        style: theme.textTheme.bodyLarge?.copyWith(
-          color: theme.colorScheme.onSurface,
-          fontSize: 14,
+        'Unsupported message type',
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontStyle: FontStyle.italic,
+          color: theme.colorScheme.onSurfaceVariant,
+          fontSize: 12,
         ),
       ),
     );
   }
 
-  Widget _buildMessageStatus(ThemeData theme, BuildContext context) {
+  Widget _buildTextMessage(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Text(
+        (message as types.TextMessage).text,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurface,
+          fontSize: 14,
+          height: 1.3,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageFooter(ThemeData theme, BuildContext context) {
     final isEdited = message.isEdited ?? false;
     final isSeen = message.metadata?['seen'] == true;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 2, 12, 8),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
@@ -437,24 +505,28 @@ class MessageBubble extends StatelessWidget {
           Text(
             _formatTime(message.createdAt ?? 0),
             style: theme.textTheme.labelSmall?.copyWith(
-              color: context.secondaryTextColor,
-              fontWeight: FontWeight.normal
+              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+              fontSize: 10,
             ),
           ),
-          const SizedBox(width: 10),
-          if (isMe) _buildMessageStatusIcon(context, isSeen),
+          if (isMe) ...[
+            const SizedBox(width: 4),
+            _buildMessageStatusIcon(context, isSeen),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildEditedLabel(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
+    return Container(
+      margin: const EdgeInsets.only(right: 4),
       child: Text(
-        "Edited",
+        "edited",
         style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+          fontSize: 9,
+          fontStyle: FontStyle.italic,
         ),
       ),
     );
@@ -462,7 +534,7 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildMessageStatusIcon(BuildContext context, bool isSeen) {
     return Icon(
-      isSeen ? Icons.done_all : Icons.done,
+      isSeen ? Icons.done_all_rounded : Icons.done_rounded,
       size: 12,
       color: isSeen
           ? context.isLightTheme
@@ -472,20 +544,12 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  BorderRadius _bubbleBorderRadius() {
-    return const BorderRadius.only(
-      bottomLeft: Radius.circular(12),
-      bottomRight: Radius.circular(12),
-      topLeft: Radius.circular(12),
-      topRight: Radius.circular(12),
-    );
-  }
-
   String _formatTime(int timestamp) {
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateFormat('hh:mm a').format(date);
+    return DateFormat('h:mm a').format(date);
   }
 
-  static const EdgeInsets messagePadding =
-      EdgeInsets.symmetric(horizontal: 8, vertical: 2);
+  static const EdgeInsets _messagePadding =
+      EdgeInsets.symmetric(horizontal: 8, vertical: 1.5);
 }
+

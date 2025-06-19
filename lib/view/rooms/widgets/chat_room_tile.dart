@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:chat_web/core/component/custom_network_image.dart';
+import 'package:chat_web/core/const/size_const.dart';
+import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -32,9 +34,8 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
   @override
   void initState() {
     super.initState();
-    _subscription = FyreChat.instance
-        .lastMessageStream(widget.room.id)
-        .listen((message) {
+    _subscription =
+        FyreChat.instance.lastMessageStream(widget.room.id).listen((message) {
       if (mounted) {
         setState(() {
           _lastMessage = message;
@@ -58,7 +59,7 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
         color: widget.isSelected && widget.isDesktop
             ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(SizeConst.radius),
         border: widget.isSelected && widget.isDesktop
             ? Border.all(
                 color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
@@ -70,11 +71,12 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
         type: MaterialType.transparency,
         child: InkWell(
           onTap: () => widget.onTap(widget.room),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(SizeConst.radius),
           splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-          highlightColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+          highlightColor:
+              Theme.of(context).colorScheme.primary.withOpacity(0.05),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: _buildContent(),
           ),
         ),
@@ -90,7 +92,7 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
 
     String displayText;
     IconData? messageIcon;
-    
+
     if (lastMsg is types.TextMessage) {
       displayText = lastMsg.text;
     } else if (lastMsg is types.ImageMessage) {
@@ -131,9 +133,9 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
               ),
           ],
         ),
-        
+
         const SizedBox(width: 16),
-        
+
         // Content
         Expanded(
           child: Column(
@@ -147,9 +149,11 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                     child: Text(
                       widget.room.name ?? 'Unknown',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: hasUnreadMessages ? FontWeight.w700 : FontWeight.w600,
-                        letterSpacing: -0.2,
-                      ),
+                            fontWeight: hasUnreadMessages
+                                ? FontWeight.w700
+                                : FontWeight.bold,
+                            letterSpacing: -0.2,
+                          ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -158,17 +162,21 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                     Text(
                       _formatTimeAgo(lastMsg?.updatedAt ?? 0),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: hasUnreadMessages
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: hasUnreadMessages ? FontWeight.w600 : FontWeight.w500,
-                      ),
+                            color: hasUnreadMessages
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                            fontWeight: hasUnreadMessages
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                          ),
                     ),
                 ],
               ),
-              
+
               const SizedBox(height: 6),
-              
+
               // Message Preview Row
               Row(
                 children: [
@@ -179,11 +187,14 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                       size: 14,
                       color: isSeen
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant
+                              .withOpacity(0.7),
                     ),
                     const SizedBox(width: 6),
                   ],
-                  
+
                   // Message type icon
                   if (messageIcon != null) ...[
                     Icon(
@@ -193,31 +204,29 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                     ),
                     const SizedBox(width: 4),
                   ],
-                  
+
                   // Message text
                   Expanded(
                     child: Text(
                       isDeleted ? "This message was deleted" : displayText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: hasUnreadMessages
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: hasUnreadMessages ? FontWeight.w500 : FontWeight.w400,
-                        fontStyle: isDeleted ? FontStyle.italic : FontStyle.normal,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.onSurfaceVariant,
                       ),
                     ),
                   ),
-                  
+
                   // Unread count badge
                   if (hasUnreadMessages)
                     Container(
                       margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(SizeConst.radius),
                       ),
                       child: Text(
                         '1',

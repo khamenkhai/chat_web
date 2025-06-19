@@ -9,10 +9,10 @@ import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/const/theme_const.dart';
 import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:chat_web/chat_service/service/chat_service.dart';
-import 'package:chat_web/view/chat/widgets/edit_message_dialog.dart';
+import 'package:chat_web/view/chat/widgets/chat_components/edit_message_dialog.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
 import 'package:chat_web/view/chat/widgets/message_input.dart';
-import 'package:chat_web/view/chat/widgets/message_options_dialog.dart';
+import 'package:chat_web/view/chat/widgets/chat_components/message_options_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

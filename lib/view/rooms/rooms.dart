@@ -3,7 +3,7 @@
 import 'package:chat_web/chat_service/fyrechat.dart';
 import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
-import 'package:chat_web/core/const/size_const.dart';
+import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:chat_web/view/rooms/widgets/chat_room_tile.dart';
 import 'package:chat_web/view/rooms/widgets/rooms_empty.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -42,48 +42,45 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
             "Logout",
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
+              fontSize: 18,
             ),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Are you sure you want to logout?",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              )
-            ],
+          content: Text(
+            "Are you sure you want to logout?",
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 14,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: const Text(
                 "Cancel",
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
+                  fontSize: 13,
                 ),
               ),
             ),
             FilledButton(
               onPressed: () => _logout(),
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
@@ -91,6 +88,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                 "Log Out",
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
+                  fontSize: 13,
                   color: Theme.of(context).colorScheme.onError,
                 ),
               ),
@@ -122,7 +120,6 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
         },
       );
 
-      // Handle window closing
       html.window.addEventListener('beforeunload', (event) {
         setOnline(false);
       });
@@ -132,7 +129,6 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!kIsWeb) {
-      // Mobile behavior
       if (state == AppLifecycleState.resumed) {
         setOnline(true);
       } else if (state == AppLifecycleState.paused ||
@@ -148,7 +144,6 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("=> room page rebuild!");
     return ScreenTypeLayout.builder(
       mobile: (context) {
         return Scaffold(
@@ -173,44 +168,29 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
 
   Widget _buildRoomsSidebar({bool isMobile = false}) {
     return Container(
-      width: isMobile ? double.infinity : 380,
+      width: isMobile ? double.infinity : 340,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: isMobile
             ? null
             : Border(
                 right: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                  width: 1,
+                  color: context.tertiary,
+                  width: 0.5,
                 ),
               ),
       ),
       child: Column(
         children: [
-          // Header Section with improved spacing and elevation
+          // Header Section - more compact
           Container(
-            padding: const EdgeInsets.fromLTRB(
-              SizeConst.kHorizontalPadding,
-              20,
-              SizeConst.kHorizontalPadding,
-              16,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: Column(
               children: [
                 _buildUserProfileSection(),
-                const SizedBox(height: 20),
-                _buildAppBar(),
                 const SizedBox(height: 16),
+                _buildAppBar(),
+                const SizedBox(height: 12),
                 _buildSearchField(),
               ],
             ),
@@ -219,9 +199,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
           // Rooms List Section
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: SizeConst.kHorizontalPadding,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: _buildRoomsList(),
             ),
           ),
@@ -241,60 +219,48 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
         if (snapshot.hasData) {
           return Row(
             children: [
-              // Enhanced Avatar with online indicator
+              // Smaller avatar with online indicator
               Stack(
                 children: [
                   GestureDetector(
                     onTap: () {
                       context.go("/profile");
                     },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.shadow.withOpacity(0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        backgroundColor: hasImage 
-                          ? Colors.transparent 
-                          : Theme.of(context).colorScheme.primary,
-                        backgroundImage: hasImage
-                            ? NetworkImage(user?.imageUrl ?? "")
-                            : null,
-                        radius: 22,
-                        child: !hasImage
-                            ? Text(
-                                user?.fullName.isNotEmpty == true 
-                                  ? user!.fullName[0].toUpperCase()
-                                  : '?',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              )
-                            : null,
-                      ),
+                    child: CircleAvatar(
+                      backgroundColor: hasImage 
+                        ? Colors.transparent 
+                        : Theme.of(context).colorScheme.primary,
+                      backgroundImage: hasImage
+                          ? NetworkImage(user?.imageUrl ?? "")
+                          : null,
+                      radius: 18,
+                      child: !hasImage
+                          ? Text(
+                              user?.fullName.isNotEmpty == true 
+                                ? user!.fullName[0].toUpperCase()
+                                : '?',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )
+                          : null,
                     ),
                   ),
-                  // Online status indicator
+                  // Smaller online status indicator
                   Positioned(
-                    bottom: 2,
-                    right: 2,
+                    bottom: 0,
+                    right: 0,
                     child: Container(
-                      width: 12,
-                      height: 12,
+                      width: 10,
+                      height: 10,
                       decoration: BoxDecoration(
                         color: Colors.green,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: Theme.of(context).colorScheme.surface,
-                          width: 2,
+                          width: 1.5,
                         ),
                       ),
                     ),
@@ -302,39 +268,39 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                 ],
               ),
               
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               
-              // User info section
+              // Compact user info section
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       user?.fullName ?? 'Unknown User',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
+                        fontSize: 14,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Row(
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 4,
+                          height: 4,
                           decoration: const BoxDecoration(
                             color: Colors.green,
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Text(
                           'Online',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
                           ),
                         ),
                       ],
@@ -346,34 +312,34 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
           );
         } else {
           return SizedBox(
-            height: 44,
+            height: 36,
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 22,
+                  radius: 18,
                   backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        height: 16,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
                         height: 12,
-                        width: 60,
+                        width: 100,
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surfaceVariant,
                           borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Container(
+                        height: 10,
+                        width: 50,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(5),
                         ),
                       ),
                     ],
@@ -400,28 +366,28 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
       children: [
         Text(
           'Messages',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
+            fontSize: 20,
           ),
         ),
         const Spacer(),
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
+            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: PopupMenuButton<String>(
             padding: EdgeInsets.zero,
             icon: Icon(
               Icons.more_vert_rounded,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 20,
+              size: 18,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
             ),
-            elevation: 8,
+            elevation: 4,
             onSelected: (value) {
               if (value == 'logout') showLogoutDialog();
             },
@@ -432,15 +398,16 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                   children: [
                     Icon(
                       Icons.logout_rounded,
-                      size: 18,
+                      size: 16,
                       color: Theme.of(context).colorScheme.error,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Text(
                       'Logout',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                         fontWeight: FontWeight.w500,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -452,14 +419,15 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
                   children: [
                     Icon(
                       Icons.settings_rounded,
-                      size: 18,
+                      size: 16,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     const Text(
                       'Settings',
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -476,27 +444,24 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     return GestureDetector(
       onTap: () => context.go("/users"),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.6),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-          ),
+          borderRadius: BorderRadius.circular(12),
+          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
         ),
         child: Row(
           children: [
             Icon(
               Icons.search_rounded,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 20,
+              size: 18,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Text(
               "Search conversations...",
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w400,
+                fontSize: 13,
               ),
             ),
           ],
@@ -535,22 +500,24 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
         children: [
           Icon(
             Icons.error_outline_rounded,
-            size: 48,
+            size: 40,
             color: Theme.of(context).colorScheme.error.withOpacity(0.7),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             'Error loading conversations',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: Theme.of(context).colorScheme.error,
               fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'Please try again later',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
             ),
           ),
         ],
@@ -565,23 +532,25 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
         children: [
           Icon(
             Icons.chat_bubble_outline_rounded,
-            size: 64,
+            size: 48,
             color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Text(
             'No conversations yet',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 16,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'Start a new conversation to get started',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+              fontSize: 12,
             ),
           ),
         ],
@@ -594,9 +563,9 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
       ..sort((a, b) => (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
 
     return ListView.separated(
-      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      padding: const EdgeInsets.only(top: 6, bottom: 12),
       itemCount: sortedRooms.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 4),
+      separatorBuilder: (context, index) => const SizedBox(height: 2),
       itemBuilder: (context, index) {
         final room = sortedRooms[index];
         final isSelected = ref.watch(selectedRoomProvider) == room;
@@ -630,4 +599,3 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     }
   }
 }
-

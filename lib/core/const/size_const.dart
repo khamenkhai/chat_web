@@ -6,6 +6,8 @@ sealed class SizeConst {
 
   /// Vertical spacing constant
   static const double kVerticalSpacing = 16;
+  
+  static const double radius = 16;
 
   /// Card or container padding (Note: can't be const since it depends on dynamic values)
   static const EdgeInsets kCardPadding = EdgeInsets.symmetric(
