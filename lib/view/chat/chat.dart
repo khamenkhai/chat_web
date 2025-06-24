@@ -14,8 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-
-
 // Provider for managing reply message state
 final replyMessageProvider = StateProvider<types.Message?>((ref) => null);
 
@@ -41,6 +39,9 @@ class ChatPage extends StatelessWidget {
     });
 
     debugPrint("=> chat page rebuilds!");
+
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     // Watch for room data changes
     return Consumer(
       builder: (context, ref, _) {
@@ -63,23 +64,42 @@ class ChatPage extends StatelessWidget {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ref.read(selectedRoomProvider.notifier).setRoom(snapshot.data!);
               });
-              return _chatScaffold(snapshot.data!);
+              return _chatScaffold(room: snapshot.data!, isMobile: isMobile,context: context);
             },
           );
         }
-        return _chatScaffold(room);
+        return _chatScaffold(room: room, isMobile: isMobile,context: context);
       },
     );
   }
 
-  Scaffold _chatScaffold(types.Room room) {
+  Scaffold _chatScaffold({
+    required types.Room room,
+    required bool isMobile,
+   required BuildContext context
+  }) {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 60,
         title: ListTile(
           contentPadding: const EdgeInsets.all(0),
           minVerticalPadding: 1,
-          leading: UserAvatar(room: room),
+          leading: isMobile
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      
+                      onPressed: () {
+                        context.go("/");
+                      },
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                    const SizedBox(width: 8),
+                    UserAvatar(room: room)
+                  ],
+                )
+              : UserAvatar(room: room),
           title: Text(room.name ?? ""),
           subtitle: StreamBuilder(
             stream: FyreChat.instance.getUserByIdStream(

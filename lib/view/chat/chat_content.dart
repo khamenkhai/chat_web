@@ -158,22 +158,103 @@ class ChatContentState extends State<ChatContent> {
                       FyreChat.instance
                           .markMessageAsSeen(widget.room.id, message.id);
 
-                      // Return a widget using the processed message
-                      return Align(
-                        alignment:
-                            isMe ? Alignment.centerRight : Alignment.centerLeft,
-                        child: MessageBubble(
-                          message: message,
-                          isMe: isMe,
-                          roomId: widget.room.id,
-                          room: widget.room,
-                          metadata: message.metadata,
-                          showTail: showTail, // Pass the parameter
-                          onTap: () {},
-                          onLongPress: () =>
-                              _handleLongPress(context, message, ref, isMe),
-                        ),
+                      // *************************************************
+                      DateTime? currentMessageDate;
+                      if (message.createdAt != null) {
+                        currentMessageDate =
+                            DateTime.fromMillisecondsSinceEpoch(
+                                message.createdAt!);
+                      }
+
+                      DateTime? previousMessageDate;
+                      if (index < docs.length - 1) {
+                        final prevDoc = docs[index + 1];
+                        final prevData = prevDoc.data() as Map<String, dynamic>;
+                        final prevCreatedAt = prevData['createdAt'];
+                        if (prevCreatedAt != null) {
+                          previousMessageDate =
+                              DateTime.fromMillisecondsSinceEpoch(
+                            prevCreatedAt.millisecondsSinceEpoch,
+                          );
+                        }
+                      }
+
+// Check if date separator is needed
+                      bool showDateSeparator = false;
+                      if (currentMessageDate != null &&
+                          (previousMessageDate == null ||
+                              currentMessageDate.day !=
+                                  previousMessageDate.day ||
+                              currentMessageDate.month !=
+                                  previousMessageDate.month ||
+                              currentMessageDate.year !=
+                                  previousMessageDate.year)) {
+                        showDateSeparator = true;
+                      }
+
+                      // *************************************************
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (showDateSeparator)
+                            Center(
+                              child: Container(
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(_formatDate(currentMessageDate!),
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall),
+                              ),
+                            ),
+                          Align(
+                            alignment: isMe
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Container(
+                              margin: EdgeInsets.only(
+                                  top: index == (docs.length - 1) ? 20 : 0),
+                              child: MessageBubble(
+                                message: message,
+                                isMe: isMe,
+                                roomId: widget.room.id,
+                                room: widget.room,
+                                metadata: message.metadata,
+                                showTail: showTail,
+                                onTap: () {},
+                                onLongPress: () => _handleLongPress(
+                                    context, message, ref, isMe),
+                              ),
+                            ),
+                          ),
+                        ],
                       );
+
+                      // Return a widget using the processed message
+                      // return Align(
+                      //   alignment:
+                      //       isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      //   child: Container(
+                      //     margin: EdgeInsets.only(
+                      //         top: index == (docs.length - 1) ? 20 : 0),
+                      //     child: MessageBubble(
+                      //       message: message,
+                      //       isMe: isMe,
+                      //       roomId: widget.room.id,
+                      //       room: widget.room,
+                      //       metadata: message.metadata,
+                      //       showTail: showTail, // Pass the parameter
+                      //       onTap: () {},
+                      //       onLongPress: () =>
+                      //           _handleLongPress(context, message, ref, isMe),
+                      //     ),
+                      //   ),
+                      // );
                     },
                   ),
                 ),
@@ -294,5 +375,19 @@ class ChatContentState extends State<ChatContent> {
     }
     // Return original message if no replied message
     return message;
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(date.year, date.month, date.day);
+
+    if (messageDate == today) {
+      return 'Today';
+    } else if (messageDate == today.subtract(const Duration(days: 1))) {
+      return 'Yesterday';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 }

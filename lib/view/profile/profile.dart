@@ -59,13 +59,13 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
       final storageRef = FirebaseStorage.instance
           .ref()
           .child('profile_images/${DateTime.now().millisecondsSinceEpoch}');
-      
+
       // Convert base64 to blob for web upload
       final blob = html.Blob([base64Decode(_selectedImageData!)]);
       final uploadTask = storageRef.putBlob(blob);
       final snapshot = await uploadTask.whenComplete(() {});
       final downloadUrl = await snapshot.ref.getDownloadURL();
-      
+
       setState(() => _isUploading = false);
       return downloadUrl;
     } catch (e) {
@@ -161,7 +161,10 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.2),
                 width: 2,
               ),
             ),
@@ -262,18 +265,17 @@ class _ProfileUpdatePageState extends ConsumerState<ProfileUpdatePage> {
 
     try {
       setState(() => _isUploading = true);
-      
+
       // Upload image if selected
-      final imageUrl = _selectedImageData != null 
-          ? await _uploadImage() 
-          : _imageUrl;
+      final imageUrl =
+          _selectedImageData != null ? await _uploadImage() : _imageUrl;
 
       // Update profile
       await ref.read(profileControllerProvider.notifier).updateProfile(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        imageUrl: imageUrl,
-      );
+            firstName: _firstNameController.text,
+            lastName: _lastNameController.text,
+            imageUrl: imageUrl,
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

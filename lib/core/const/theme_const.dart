@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 @immutable
 class AppTheme {
@@ -55,8 +56,13 @@ class AppTheme {
   static const Color _darkMessageOtherText = Colors.white;
 
   // Text Styles
-  static const TextStyle _baseTextStyle = TextStyle(
-    fontFamily: 'Inter', // Recommended to use Inter font
+  // static const TextStyle _baseTextStyle = TextStyle(
+  //   fontFamily: 'Inter', // Recommended to use Inter font
+  //   height: 1.5,
+  // );
+
+  // Update the base text style to use Google Fonts
+  static TextStyle get _baseTextStyle => GoogleFonts.lato(
     height: 1.5,
   );
 

@@ -260,7 +260,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
               final isImageUploading = ref.watch(imageUploadingProvider);
 
               return Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                // crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   isAttachmentUploading
                       ? const LoadingWidget()

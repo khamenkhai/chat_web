@@ -99,12 +99,15 @@ class MessageBubble extends StatelessWidget {
       crossAxisAlignment:
           isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 4),
         Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Reaction button for received messages - smaller
-            if (isMe) _buildReactionButton(context, isLeft: true, messageColors: messageColors),
+            if (isMe)
+              _buildReactionButton(context,
+                  isLeft: true, messageColors: messageColors),
 
             // Message bubble
             Flexible(
@@ -120,7 +123,9 @@ class MessageBubble extends StatelessWidget {
             ),
 
             // Reaction button for sent messages - smaller
-            if (!isMe) _buildReactionButton(context, isLeft: false,messageColors: messageColors),
+            if (!isMe)
+              _buildReactionButton(context,
+                  isLeft: false, messageColors: messageColors),
           ],
         ),
 
@@ -177,7 +182,8 @@ class MessageBubble extends StatelessWidget {
     return BorderRadius.circular(14);
   }
 
-  Widget _buildReactionButton(BuildContext context, {required bool isLeft,required MessageColors messageColors}) {
+  Widget _buildReactionButton(BuildContext context,
+      {required bool isLeft, required MessageColors messageColors}) {
     final String? myReaction = _getMyReaction(
         message.reactions, FirebaseAuth.instance.currentUser?.uid ?? "");
 
@@ -230,23 +236,22 @@ class MessageBubble extends StatelessWidget {
         itemSize: const Size(28, 28),
         child: myReaction == null
             ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  // color:  messageColors.otherColor,
-                  borderRadius: BorderRadius.circular(SizeConst.radius /1.5)
-                ),
+                    // color:  messageColors.otherColor,
+                    borderRadius:
+                        BorderRadius.circular(SizeConst.radius / 1.5)),
                 child: Icon(
-                  CupertinoIcons.hand_thumbsup,
-                  size: 14,
+                  CupertinoIcons.heart,
+                  size: 16,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               )
             : Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: messageColors.otherColor,
-                 borderRadius: BorderRadius.circular(SizeConst.radius)
-                ),
+                    color: messageColors.otherColor,
+                    borderRadius: BorderRadius.circular(SizeConst.radius)),
                 child: Text(
                   myReaction,
                   style: const TextStyle(fontSize: 12),
@@ -408,7 +413,7 @@ class MessageBubble extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
-          fontSize: 11,
+          fontSize: 16,
           height: 1.2,
         ),
       );
@@ -465,7 +470,7 @@ class MessageBubble extends StatelessWidget {
       return FileMessageTile(message: message as types.FileMessage);
     }
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Text(
         'Unsupported message type',
         style: theme.textTheme.bodySmall?.copyWith(
@@ -479,7 +484,7 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildTextMessage(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 8),
       child: Text(
         (message as types.TextMessage).text,
         style: theme.textTheme.bodyMedium?.copyWith(
@@ -552,4 +557,3 @@ class MessageBubble extends StatelessWidget {
   static const EdgeInsets _messagePadding =
       EdgeInsets.symmetric(horizontal: 8, vertical: 1.5);
 }
-
