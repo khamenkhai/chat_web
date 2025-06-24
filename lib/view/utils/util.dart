@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:fyrechat/fyrechat.dart' as types;
 
 const colors = [
   Color(0xffff6767),

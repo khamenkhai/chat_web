@@ -1,9 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:iconly/iconly.dart';
+import 'package:fyrechat/fyrechat.dart' as types;
 
+import 'package:iconly/iconly.dart';
 
 class FileMessageTile extends StatelessWidget {
   final types.FileMessage message;

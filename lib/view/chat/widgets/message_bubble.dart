@@ -10,8 +10,7 @@ import 'package:chat_web/view/common/user_avatar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_reaction_button/flutter_reaction_button.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as types;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
@@ -197,7 +196,7 @@ class MessageBubble extends StatelessWidget {
         toggle: false,
         direction: isMe ? ReactionsBoxAlignment.rtl : ReactionsBoxAlignment.ltr,
         onReactionChanged: (Reaction<String>? reaction) {
-          FyreChat.instance.reactToMessage(
+          types.FyreChat.instance.reactToMessage(
             roomId: roomId,
             messageId: message.id,
             emoji: reaction?.value ?? "",
@@ -263,7 +262,7 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildOtherUserReaction() {
     return FutureBuilder<String?>(
-      future: FyreChat.instance.getOtherReaction(
+      future: types.FyreChat.instance.getOtherReaction(
         roomId: roomId,
         messageId: message.id,
         otherUserId: room.users

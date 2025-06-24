@@ -1,6 +1,4 @@
 // ignore_for_file: deprecated_member_use
-
-import 'package:chat_web/chat_service/fyrechat.dart';
 import 'package:chat_web/controller/room_provider.dart';
 import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
@@ -12,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:fyrechat/fyrechat.dart' as fc;
 import 'package:skeletonizer/skeletonizer.dart';
 import 'dart:async';
 import '../chat/chat.dart';
@@ -139,7 +137,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
   }
 
   void setOnline(bool online) {
-    FyreChat.instance.setOnline(online);
+    fc.FyreChat.instance.setOnline(online);
   }
 
   @override
@@ -209,10 +207,10 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
 
   Widget _buildUserProfileSection() {
     return FutureBuilder(
-      future: FyreChat.instance
+      future: fc.FyreChat.instance
           .getUserById(FirebaseAuth.instance.currentUser?.uid ?? ""),
       builder: (context, snapshot) {
-        final types.User? user = snapshot.data;
+        final fc.User? user = snapshot.data;
         final hasImage = user?.imageUrl != null;
         
         if (snapshot.hasData) {
@@ -460,11 +458,11 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
 
     return roomsAsync.when(
       loading: () => _buildRoomList([
-        const Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
-        const Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
-        const Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
-        const Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
-        const Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+        const fc.Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+        const fc.Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+        const fc.Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+        const fc.Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
+        const fc.Room(id: "dfdfdfadf", users: [], type: null, imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuNhTZJTtkR6b-ADMhmzPvVwaLuLdz273wvQ&s"),
       ], true),
       error: (error, stack) => _buildErrorState(),
       data: (rooms) {
@@ -543,8 +541,8 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     );
   }
 
-  Widget _buildRoomList(List<types.Room> rooms, bool enabled) {
-    final sortedRooms = List<types.Room>.from(rooms)
+  Widget _buildRoomList(List<fc.Room> rooms, bool enabled) {
+    final sortedRooms = List<fc.Room>.from(rooms)
       ..sort((a, b) => (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
 
     return ListView.separated(
@@ -572,7 +570,7 @@ class _RoomsPageState extends ConsumerState<RoomsPage>
     );
   }
 
-  void _onRoomTap(types.Room room) {
+  void _onRoomTap(fc.Room room) {
     final deviceType = getDeviceType(MediaQuery.of(context).size);
     final isDesktop = deviceType == DeviceScreenType.desktop;
 

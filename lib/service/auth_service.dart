@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:fyrechat/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as fc;
 
 class AuthService {
 
@@ -25,7 +25,7 @@ class AuthService {
     );
 
     await FyreChat.instance.createUserInFirestore(
-      types.User(
+      fc.User(
         id: credential.user!.uid,
         firstName: firstName,
         lastName: lastName,

@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
 import 'package:crypto/crypto.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:fyrechat/fyrechat.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 String formatTime(String timestamp) {
@@ -74,7 +74,7 @@ String extractTime(DateTime? dateTime) {
   }
 }
 
-String getUserName(types.User user) =>
+String getUserName(User user) =>
     '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim();
 
 // Function to hash an email using SHA-256

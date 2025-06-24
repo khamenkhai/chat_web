@@ -1,15 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:firebase_auth/firebase_auth.dart' as fa;
+import 'package:fyrechat/fyrechat.dart' as fc;
 
 /// Extension with one [toShortString] method.
-extension RoleToShortString on types.Role {
+extension RoleToShortString on fc.Role {
   /// Converts enum to the string equal to enum's name.
   String toShortString() => toString().split('.').last;
 }
 
 /// Extension with one [toShortString] method.
-extension RoomTypeToShortString on types.RoomType {
+extension RoomTypeToShortString on fc.RoomType {
   /// Converts enum to the string equal to enum's name.
   String toShortString() => toString().split('.').last;
 }
@@ -36,8 +36,8 @@ Future<Map<String, dynamic>> fetchUser(
 
 /// Returns a list of [types.Room] created from Firebase query.
 /// If room has 2 participants, sets correct room name and image.
-Future<List<types.Room>> processRoomsQuery(
-  User firebaseUser,
+Future<List<fc.Room>> processRoomsQuery(
+  fa.User firebaseUser,
   FirebaseFirestore instance,
   QuerySnapshot<Map<String, dynamic>> query,
   String usersCollectionName,
@@ -55,9 +55,9 @@ Future<List<types.Room>> processRoomsQuery(
 }
 
 /// Returns a [types.Room] created from Firebase document.
-Future<types.Room> processRoomDocument(
+Future<fc.Room> processRoomDocument(
   DocumentSnapshot<Map<String, dynamic>> doc,
-  User firebaseUser,
+  fa.User firebaseUser,
   FirebaseFirestore instance,
   String usersCollectionName,
 ) async {
@@ -84,7 +84,7 @@ Future<types.Room> processRoomDocument(
     ),
   );
 
-  if (type == types.RoomType.direct.toShortString()) {
+  if (type == fc.RoomType.direct.toString().split('.').last) {
     try {
       final otherUser = users.firstWhere(
         (u) => u['id'] != firebaseUser.uid,
@@ -121,5 +121,5 @@ Future<types.Room> processRoomDocument(
     data['lastMessages'] = lastMessages;
   }
 
-  return types.Room.fromJson(data);
+  return fc.Room.fromJson(data);
 }

@@ -1,4 +1,4 @@
-import 'package:chat_web/chat_service/models/message_models.dart' as mm;
+import 'package:fyrechat/fyrechat.dart' as mm;
 import 'package:chat_web/controller/profile_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';

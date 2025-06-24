@@ -1,4 +1,3 @@
-import 'package:chat_web/chat_service/const/fire_chat_const.dart';
 import 'package:chat_web/view/chat/chat.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_pagination/firebase_pagination.dart';
@@ -7,17 +6,18 @@ import 'package:chat_web/controller/chat_provider.dart';
 import 'package:chat_web/controller/chat_sound_player.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/const/theme_const.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/service/chat_service.dart';
 import 'package:chat_web/view/chat/widgets/chat_components/edit_message_dialog.dart';
 import 'package:chat_web/view/chat/widgets/message_bubble.dart';
 import 'package:chat_web/view/chat/widgets/message_input.dart';
 import 'package:chat_web/view/chat/widgets/chat_components/message_options_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fyrechat/const/fire_chat_const.dart';
+import 'package:fyrechat/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as fc;
 
 class ChatContent extends StatefulWidget {
-  final types.Room room;
+  final fc.Room room;
   const ChatContent({required this.room, super.key});
 
   @override
@@ -26,7 +26,7 @@ class ChatContent extends StatefulWidget {
 
 class ChatContentState extends State<ChatContent> {
   final ChatSoundPlayer _soundPlayer = ChatSoundPlayer();
-  List<types.Message> _previousMessages = [];
+  List<fc.Message> _previousMessages = [];
   bool _isMounted = false;
 
   @override
@@ -47,7 +47,7 @@ class ChatContentState extends State<ChatContent> {
     await _soundPlayer.initialize();
   }
 
-  void _checkForNewMessages(List<types.Message> currentMessages) {
+  void _checkForNewMessages(List<fc.Message> currentMessages) {
     if (_previousMessages.isEmpty) {
       _previousMessages = currentMessages;
       return;
@@ -105,7 +105,7 @@ class ChatContentState extends State<ChatContent> {
                             '${FireChatConst.roomsCollectionName}/${widget.room.id}/messages')
                         .orderBy('createdAt', descending: true),
                     itemBuilder: (context, docs, index) {
-                      final types.Room room = widget.room;
+                      final fc.Room room = widget.room;
                       final doc = docs[index];
                       final data = doc.data() as Map<String, dynamic>;
 
@@ -113,7 +113,7 @@ class ChatContentState extends State<ChatContent> {
                       final author = room.users.firstWhere(
                         (u) => u.id == data['authorId'],
                         orElse: () =>
-                            types.User(id: data['authorId'] as String),
+                            fc.User(id: data['authorId'] as String),
                       );
 
                       data['author'] = author.toJson();
@@ -130,7 +130,7 @@ class ChatContentState extends State<ChatContent> {
                           .every((user) => seenBy.containsKey(user.id));
 
                       // Create the message
-                      final message = types.Message.fromJson(data).copyWith(
+                      final message = fc.Message.fromJson(data).copyWith(
                         metadata: {
                           ...data['metadata'] ?? {},
                           'seen': allUsersHaveSeen,
@@ -288,7 +288,7 @@ class ChatContentState extends State<ChatContent> {
 
   void _handleLongPress(
     BuildContext context,
-    types.Message message,
+    fc.Message message,
     WidgetRef ref,
     bool isMe,
   ) {
@@ -298,15 +298,15 @@ class ChatContentState extends State<ChatContent> {
         onEdit: () => _handleEditMessage(context, message),
         onDelete: () => _handleDeleteMessage(message),
         onReply: () => _handleReplyMessage(ref, message),
-        isTextMessage: message is types.TextMessage,
+        isTextMessage: message is fc.TextMessage,
       );
     } else {
       ref.read(replyMessageProvider.notifier).state = message;
     }
   }
 
-  void _handleEditMessage(BuildContext context, types.Message message) {
-    if (message is types.TextMessage) {
+  void _handleEditMessage(BuildContext context, fc.Message message) {
+    if (message is fc.TextMessage) {
       showEditMessageDialog(
         context: context,
         initialMessage: message.text,
@@ -321,18 +321,18 @@ class ChatContentState extends State<ChatContent> {
     }
   }
 
-  void _handleDeleteMessage(types.Message message) {
+  void _handleDeleteMessage(fc.Message message) {
     FyreChat.instance.setDeleteMessage(
       roomId: widget.room.id,
       messageId: message.id,
     );
   }
 
-  void _handleReplyMessage(WidgetRef ref, types.Message message) {
+  void _handleReplyMessage(WidgetRef ref, fc.Message message) {
     ref.read(replyMessageProvider.notifier).state = message;
   }
 
-  Widget _buildReplyWidget(types.Message replyTo, WidgetRef ref) {
+  Widget _buildReplyWidget(fc.Message replyTo, WidgetRef ref) {
     final messageColors = Theme.of(context).extension<MessageColors>()!;
     return Container(
       color: messageColors.otherReplyColor,
@@ -341,7 +341,7 @@ class ChatContentState extends State<ChatContent> {
         children: [
           Expanded(
             child: Text(
-              replyTo is types.TextMessage ? replyTo.text : 'Replying...',
+              replyTo is fc.TextMessage ? replyTo.text : 'Replying...',
               style: const TextStyle(fontStyle: FontStyle.italic),
               overflow: TextOverflow.ellipsis,
             ),
@@ -356,9 +356,9 @@ class ChatContentState extends State<ChatContent> {
     );
   }
 
-  types.Message _processReplyMetadata(
-    types.Message message,
-    types.Room room,
+  fc.Message _processReplyMetadata(
+    fc.Message message,
+    fc.Room room,
   ) {
     // If message has a replied message, ensure its author is properly set from room users
     if (message.repliedMessage != null) {

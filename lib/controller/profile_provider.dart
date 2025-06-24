@@ -1,18 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:chat_web/chat_service/service/chat_service.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as mm;
+import 'package:fyrechat/fyrechat.dart' as fc;
 import 'package:firebase_auth/firebase_auth.dart';
 
-final profileControllerProvider = StateNotifierProvider<ProfileController, AsyncValue<mm.User?>>((ref) {
+final profileControllerProvider =
+    StateNotifierProvider<ProfileController, AsyncValue<fc.User?>>((ref) {
   return ProfileController();
 });
 
-class ProfileController extends StateNotifier<AsyncValue<mm.User?>> {
+class ProfileController extends StateNotifier<AsyncValue<fc.User?>> {
   ProfileController() : super(const AsyncValue.loading()) {
     loadUserData();
   }
 
-  final chatService = FyreChat.instance;
+  final chatService = fc.FyreChat.instance;
 
   Future<void> loadUserData() async {
     state = const AsyncValue.loading();
@@ -32,7 +32,7 @@ class ProfileController extends StateNotifier<AsyncValue<mm.User?>> {
   Future<void> updateProfile({
     required String firstName,
     required String lastName,
-     String? imageUrl,
+    String? imageUrl,
   }) async {
     final currentUser = state.value;
     if (currentUser == null) return;

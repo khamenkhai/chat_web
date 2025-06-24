@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as fc;
 
 // Stream provider for messages
 // final messagesStreamProvider = StreamProvider.autoDispose
@@ -9,9 +8,9 @@ import 'package:chat_web/chat_service/service/chat_service.dart';
 // });
 
 final messagesStreamProvider = StreamProvider.autoDispose
-    .family<List<types.Message>, types.Room>((ref, room) {
+    .family<List<fc.Message>, fc.Room>((ref, room) {
   final limit = ref.watch(messageLimitProvider);
-  return FyreChat.instance.messages(room, limit: limit);
+  return fc.FyreChat.instance.messages(room, limit: limit);
 });
 
 // Change this from StateProvider to StateNotifierProvider

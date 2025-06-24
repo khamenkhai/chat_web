@@ -1,6 +1,6 @@
 import 'package:chat_web/core/component/custom_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:fyrechat/fyrechat.dart' as types;
 import 'package:photo_view/photo_view.dart';
 
 class UserAvatar extends StatelessWidget {

@@ -1,9 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as fc;
 
-final searchUsersProvider = FutureProvider.family<List<types.User>, String>(
+final searchUsersProvider = FutureProvider.family<List<fc.User>, String>(
   (ref, query) {
-    return FyreChat.instance.searchUsersByFullName(query);
+    return fc.FyreChat.instance.searchUsersByFullName(query);
   },
 );

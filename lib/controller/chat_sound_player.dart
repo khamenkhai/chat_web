@@ -1,12 +1,12 @@
 import 'package:audioplayers/audioplayers.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:fyrechat/fyrechat.dart' as fc;
 
 class ChatSoundPlayer {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isInitialized = false;
 
   static bool shouldPlaySound(
-    types.Message message,
+    fc.Message message,
     String currentUserId, {
     Duration threshold = const Duration(seconds: 10),
   }) {

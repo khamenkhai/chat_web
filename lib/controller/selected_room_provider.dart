@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:chat_web/core/local_data/shared_prefs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
+import 'package:fyrechat/fyrechat.dart';
 
 final selectedRoomProvider =
-    StateNotifierProvider<PersistentSelectedRoomNotifier, types.Room?>((ref) {
+    StateNotifierProvider<PersistentSelectedRoomNotifier, Room?>((ref) {
   return PersistentSelectedRoomNotifier(ref);
 });
 
-class PersistentSelectedRoomNotifier extends StateNotifier<types.Room?> {
+class PersistentSelectedRoomNotifier extends StateNotifier<Room?> {
   final Ref ref;
   final SharedPref _sharedPref = SharedPref();
 
@@ -21,7 +21,7 @@ class PersistentSelectedRoomNotifier extends StateNotifier<types.Room?> {
     try {
       final jsonString = await _sharedPref.getString(key: 'selectedRoom');
       if (jsonString.isNotEmpty) {
-        final room = types.Room.fromJson(jsonDecode(jsonString));
+        final room = Room.fromJson(jsonDecode(jsonString));
         state = room;
       }
       if (kDebugMode) {
@@ -34,7 +34,7 @@ class PersistentSelectedRoomNotifier extends StateNotifier<types.Room?> {
 
   Future<void> loadData() async => _loadPersistedData();
 
-  Future<void> setRoom(types.Room? room) async {
+  Future<void> setRoom(Room? room) async {
     state = room;
     try {
       if (room == null) {

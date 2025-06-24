@@ -4,8 +4,7 @@ import 'package:chat_web/core/component/loading_widget.dart';
 import 'package:chat_web/core/const/size_const.dart';
 import 'package:chat_web/view/common/user_avatar.dart';
 import 'package:flutter/material.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as fc;
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly/iconly.dart';
@@ -28,8 +27,8 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     super.dispose();
   }
 
-  void _handlePressed(types.User otherUser, BuildContext context) async {
-    final room = await FyreChat.instance.createRoom(otherUser);
+  void _handlePressed(fc.User otherUser, BuildContext context) async {
+    final room = await fc.FyreChat.instance.createRoom(otherUser);
     if (!context.mounted) return;
     ref.read(selectedRoomProvider.notifier).setRoom(room);
     context.go("/chat/${room.id}", extra: room.id);

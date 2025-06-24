@@ -1,17 +1,15 @@
 // ignore_for_file: deprecated_member_use
 
-import 'dart:async';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as fc;
 import 'package:chat_web/core/component/custom_network_image.dart';
 import 'package:chat_web/core/const/size_const.dart';
 import 'package:chat_web/core/utils/context_extension.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-class ChatRoomTile extends StatefulWidget {
-  final types.Room room;
-  final void Function(types.Room) onTap;
+class ChatRoomTile extends StatelessWidget {
+  final fc.Room room;
+  final void Function(fc.Room) onTap;
   final bool isSelected;
   final bool isDesktop;
 
@@ -24,43 +22,16 @@ class ChatRoomTile extends StatefulWidget {
   });
 
   @override
-  State<ChatRoomTile> createState() => _ChatRoomTileState();
-}
-
-class _ChatRoomTileState extends State<ChatRoomTile> {
-  types.Message? _lastMessage;
-  StreamSubscription<types.Message?>? _subscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _subscription =
-        FyreChat.instance.lastMessageStream(widget.room.id).listen((message) {
-      if (mounted) {
-        setState(() {
-          _lastMessage = message;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: widget.isSelected && widget.isDesktop
+        color: isSelected && isDesktop
             ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(SizeConst.radius),
-        border: widget.isSelected && widget.isDesktop
+        border: isSelected && isDesktop
             ? Border.all(
                 color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 width: 1,
@@ -70,84 +41,87 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
-          onTap: () => widget.onTap(widget.room),
+          onTap: () => onTap(room),
           borderRadius: BorderRadius.circular(SizeConst.radius),
           splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
           highlightColor:
               Theme.of(context).colorScheme.primary.withOpacity(0.05),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: _buildContent(),
+            child: Row(
+              children: [
+                // Avatar
+                Stack(
+                  children: [
+                    _buildAvatar(room, context),
+                    // if (hasUnreadMessages)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.surface,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(width: 16),
+
+                _buildContentWithStream(),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
-    final lastMsg = _lastMessage;
-    final isSeen = lastMsg?.metadata?['seen'] == true;
-    final isDeleted = lastMsg?.isDeleted ?? false;
-    final hasUnreadMessages = !isSeen && lastMsg != null;
+  Widget _buildContentWithStream() {
+    return StreamBuilder<fc.Message?>(
+      stream: fc.FyreChat.instance.lastMessageStream(room.id),
+      builder: (context, snapshot) {
+        final lastMsg = snapshot.data;
+        final isSeen = lastMsg?.metadata?['seen'] == true;
+        final isDeleted = lastMsg?.isDeleted ?? false;
+        final hasUnreadMessages = !isSeen && lastMsg != null;
 
-    String displayText;
-    IconData? messageIcon;
+        String displayText;
+        IconData? messageIcon;
 
-    if (lastMsg is types.TextMessage) {
-      displayText = lastMsg.text;
-    } else if (lastMsg is types.ImageMessage) {
-      displayText = 'Photo';
-      messageIcon = Icons.image_rounded;
-    } else if (lastMsg is types.FileMessage) {
-      displayText = 'File';
-      messageIcon = Icons.attach_file_rounded;
-    } else if (lastMsg == null) {
-      displayText = 'No messages yet';
-    } else {
-      displayText = 'Message';
-    }
+        if (lastMsg is fc.TextMessage) {
+          displayText = lastMsg.text;
+        } else if (lastMsg is fc.ImageMessage) {
+          displayText = 'Photo';
+          messageIcon = Icons.image_rounded;
+        } else if (lastMsg is fc.FileMessage) {
+          displayText = 'File';
+          messageIcon = Icons.attach_file_rounded;
+        } else if (lastMsg == null) {
+          displayText = 'No messages yet';
+        } else {
+          displayText = 'Message';
+        }
 
-    return Row(
-      children: [
-        // Enhanced Avatar
-        Stack(
-          children: [
-            _buildAvatar(widget.room),
-            // Unread indicator
-            if (hasUnreadMessages)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.surface,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-
-        const SizedBox(width: 16),
-
-        // Content
-        Expanded(
+        return Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Name and Time Row
+              // Name + time
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
-                      widget.room.name ?? 'Unknown',
+                      room.name ?? 'Unknown',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: hasUnreadMessages
                                 ? FontWeight.w700
@@ -177,10 +151,9 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
 
               const SizedBox(height: 6),
 
-              // Message Preview Row
+              // Message preview
               Row(
                 children: [
-                  // Message status icon
                   if (displayText != "No messages yet") ...[
                     Icon(
                       isSeen ? Icons.done_all_rounded : Icons.done_rounded,
@@ -194,8 +167,6 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                     ),
                     const SizedBox(width: 6),
                   ],
-
-                  // Message type icon
                   if (messageIcon != null) ...[
                     Icon(
                       messageIcon,
@@ -204,8 +175,6 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                     ),
                     const SizedBox(width: 4),
                   ],
-
-                  // Message text
                   Expanded(
                     child: Text(
                       isDeleted ? "This message was deleted" : displayText,
@@ -217,8 +186,6 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
                       ),
                     ),
                   ),
-
-                  // Unread count badge
                   if (hasUnreadMessages)
                     Container(
                       margin: const EdgeInsets.only(left: 8),
@@ -241,12 +208,12 @@ class _ChatRoomTileState extends State<ChatRoomTile> {
               ),
             ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildAvatar(types.Room room) {
+  Widget _buildAvatar(fc.Room room, BuildContext context) {
     final name = room.name ?? '';
 
     return Container(

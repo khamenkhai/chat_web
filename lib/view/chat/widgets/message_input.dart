@@ -11,8 +11,7 @@ import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' as foundation;
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as types;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
@@ -116,13 +115,13 @@ class _MessageInputState extends ConsumerState<MessageInput> {
     final room = ref.read(selectedRoomProvider);
 
     if (reply != null) {
-      FyreChat.instance.sendReply(
+      types.FyreChat.instance.sendReply(
         originalMessage: reply,
         partialReply: types.PartialText(text: text),
         roomId: room?.id ?? "",
       );
     } else {
-      FyreChat.instance.sendMessage(
+      types.FyreChat.instance.sendMessage(
         types.PartialText(text: text),
         room?.id ?? "",
       );
@@ -193,7 +192,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
         final room = ref.read(selectedRoomProvider);
 
         if (room != null) {
-          FyreChat.instance.sendMessage(message, room.id);
+          types.FyreChat.instance.sendMessage(message, room.id);
         }
       } finally {
         ref.read(attachmentUploadingProvider.notifier).state = false;
@@ -234,7 +233,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
       final room = ref.read(selectedRoomProvider);
 
       if (room != null) {
-        FyreChat.instance.sendMessage(message, room.id);
+        types.FyreChat.instance.sendMessage(message, room.id);
       }
     } catch (e) {
       if (!context.mounted) return;

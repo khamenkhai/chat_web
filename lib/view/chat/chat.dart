@@ -1,9 +1,7 @@
 import 'package:chat_web/controller/selected_room_provider.dart';
 import 'package:chat_web/core/component/custom_error_widget.dart';
 import 'package:chat_web/core/component/loading_widget.dart';
-import 'package:chat_web/chat_service/models/message_models.dart' as types;
-import 'package:chat_web/chat_service/models/message_models.dart';
-import 'package:chat_web/chat_service/service/chat_service.dart';
+import 'package:fyrechat/fyrechat.dart' as types;
 import 'package:chat_web/core/utils/format_last_seen.dart';
 import 'package:chat_web/view/chat/chat_content.dart';
 import 'package:chat_web/view/common/user_avatar.dart';
@@ -46,11 +44,11 @@ class ChatPage extends StatelessWidget {
     return Consumer(
       builder: (context, ref, _) {
         // Use `watch` to react to changes (if needed)
-        final Room? room = ref.watch(selectedRoomProvider);
+        final types.Room? room = ref.watch(selectedRoomProvider);
 
         if (room == null) {
           return FutureBuilder(
-            future: FyreChat.instance.getRoomById(roomId),
+            future: types.FyreChat.instance.getRoomById(roomId),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const LoadingWidget();
@@ -102,7 +100,7 @@ class ChatPage extends StatelessWidget {
               : UserAvatar(room: room),
           title: Text(room.name ?? ""),
           subtitle: StreamBuilder(
-            stream: FyreChat.instance.getUserByIdStream(
+            stream: types.FyreChat.instance.getUserByIdStream(
               room.users
                   .firstWhere(
                       (e) => e.id != FirebaseAuth.instance.currentUser?.uid)
