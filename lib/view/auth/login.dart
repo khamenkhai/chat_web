@@ -15,7 +15,7 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final FocusNode _passwordFocusNode = FocusNode();
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(text: "demo1@gmail.com");
   final TextEditingController _passwordController =
       TextEditingController(text: 'password');
   final _formKey = GlobalKey<FormState>();

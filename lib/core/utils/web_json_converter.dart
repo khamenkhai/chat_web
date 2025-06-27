@@ -3,14 +3,19 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 class WebJsonConverter {
-  static Map<String, dynamic> toMap(dynamic json) {
+  static Map<String, dynamic> toMap(dynamic json,{bool isImageMessage = false}) {
     if (json == null) {
       debugPrint('🟡 JSON input is null → returning empty map');
       return {};
     }
 
+    if(isImageMessage){
+      debugPrint("🍉 Image message");
+    }
+    
+
     if (json is Map<String, dynamic>) {
-      debugPrint('✅ JSON is already a Map<String, dynamic> → returning as is');
+      debugPrint('✅ JSON is already a Map<String, dynamic> → $json\n\n');
       return json;
     }
 

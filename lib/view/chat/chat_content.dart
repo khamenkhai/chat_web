@@ -86,10 +86,18 @@ class ChatContentState extends State<ChatContent> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('🚨 Error: $error', style: const TextStyle(color: Colors.red)),
+                  Text(
+                    '🚨 Error: $error',
+                    style: const TextStyle(color: Colors.blueAccent),
+                  ),
                   const SizedBox(height: 8),
-                  Text('🧱 Stack trace:\n$stack',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(
+                    '🧱 Stack trace:\n$stack',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             );
@@ -114,7 +122,8 @@ class ChatContentState extends State<ChatContent> {
                     limit: 10,
                     query: FirebaseFirestore.instance
                         .collection(
-                            '${fc.FireChatConst.roomsCollectionName}/${widget.room.id}/messages')
+                          '${fc.FireChatConst.roomsCollectionName}/${widget.room.id}/messages',
+                        )
                         .orderBy('createdAt', descending: true),
                     itemBuilder: (context, docs, index) {
                       final fc.Room room = widget.room;
@@ -137,8 +146,9 @@ class ChatContentState extends State<ChatContent> {
                       // Check if the message has been seen by all users
                       final seenBy =
                           data['seenBy'] as Map<String, dynamic>? ?? {};
-                      final allUsersHaveSeen = room.users
-                          .every((user) => seenBy.containsKey(user.id));
+                      final allUsersHaveSeen = room.users.every(
+                        (user) => seenBy.containsKey(user.id),
+                      );
 
                       // Create the message
                       final message = fc.Message.fromJson(data).copyWith(
@@ -151,7 +161,8 @@ class ChatContentState extends State<ChatContent> {
                       // Process reply metadata if exists
                       _processReplyMetadata(message, room);
 
-                      final isMe = FirebaseAuth.instance.currentUser?.uid ==
+                      final isMe =
+                          FirebaseAuth.instance.currentUser?.uid ==
                           message.author.id;
 
                       // 💡 Calculate showTail:
@@ -166,15 +177,18 @@ class ChatContentState extends State<ChatContent> {
                         }
                       }
 
-                      fc.FyreChat.instance
-                          .markMessageAsSeen(widget.room.id, message.id);
+                      fc.FyreChat.instance.markMessageAsSeen(
+                        widget.room.id,
+                        message.id,
+                      );
 
                       // *************************************************
                       DateTime? currentMessageDate;
                       if (message.createdAt != null) {
                         currentMessageDate =
                             DateTime.fromMillisecondsSinceEpoch(
-                                message.createdAt!);
+                              message.createdAt!,
+                            );
                       }
 
                       DateTime? previousMessageDate;
@@ -185,12 +199,12 @@ class ChatContentState extends State<ChatContent> {
                         if (prevCreatedAt != null) {
                           previousMessageDate =
                               DateTime.fromMillisecondsSinceEpoch(
-                            prevCreatedAt.millisecondsSinceEpoch,
-                          );
+                                prevCreatedAt.millisecondsSinceEpoch,
+                              );
                         }
                       }
 
-// Check if date separator is needed
+                      // Check if date separator is needed
                       bool showDateSeparator = false;
                       if (currentMessageDate != null &&
                           (previousMessageDate == null ||
@@ -204,23 +218,34 @@ class ChatContentState extends State<ChatContent> {
                       }
 
                       // *************************************************
+
+                      // debugPrint("🍇 => $index:${message.type}\n");
+
+                      // if(message.repliedMessage != null){
+                      //    debugPrint("🍋 => $index:${message.repliedMessage}");
+                      // }
+
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (showDateSeparator)
                             Center(
                               child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(vertical: 10),
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: Text(_formatDate(currentMessageDate!),
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall),
+                                child: Text(
+                                  _formatDate(currentMessageDate!),
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                               ),
                             ),
                           Align(
@@ -229,7 +254,8 @@ class ChatContentState extends State<ChatContent> {
                                 : Alignment.centerLeft,
                             child: Container(
                               margin: EdgeInsets.only(
-                                  top: index == (docs.length - 1) ? 20 : 0),
+                                top: index == (docs.length - 1) ? 20 : 0,
+                              ),
                               child: MessageBubble(
                                 message: message,
                                 isMe: isMe,
@@ -239,7 +265,11 @@ class ChatContentState extends State<ChatContent> {
                                 showTail: showTail,
                                 onTap: () {},
                                 onLongPress: () => _handleLongPress(
-                                    context, message, ref, isMe),
+                                  context,
+                                  message,
+                                  ref,
+                                  isMe,
+                                ),
                               ),
                             ),
                           ),
@@ -361,16 +391,13 @@ class ChatContentState extends State<ChatContent> {
             icon: const Icon(Icons.close),
             onPressed: () =>
                 ref.read(replyMessageProvider.notifier).state = null,
-          )
+          ),
         ],
       ),
     );
   }
 
-  fc.Message _processReplyMetadata(
-    fc.Message message,
-    fc.Room room,
-  ) {
+  fc.Message _processReplyMetadata(fc.Message message, fc.Room room) {
     // If message has a replied message, ensure its author is properly set from room users
     if (message.repliedMessage != null) {
       final repliedMessage = message.repliedMessage!;

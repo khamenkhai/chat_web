@@ -13,6 +13,7 @@ import 'package:flutter_reaction_button/flutter_reaction_button.dart';
 import 'package:chat_application/fyrechat/fyrechat.dart' as fc;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:iconly/iconly.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -40,10 +41,7 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (message.isDeleted ?? false) {
-      return DeletedMessageTile(
-        isMe: isMe,
-        createdAt: message.createdAt,
-      );
+      return DeletedMessageTile(isMe: isMe, createdAt: message.createdAt);
     }
     return _buildMessageBubble(context);
   }
@@ -57,8 +55,9 @@ class MessageBubble extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           // Other user avatar - smaller and cleaner
           if (!isMe) _buildOtherUserAvatar(),
@@ -81,10 +80,7 @@ class MessageBubble extends StatelessWidget {
       height: 28,
       margin: const EdgeInsets.only(right: 6, bottom: 2),
       child: showTail
-          ? UserAvatar(
-              room: room,
-              size: 24,
-            )
+          ? UserAvatar(room: room, size: 24)
           : const SizedBox.shrink(),
     );
   }
@@ -95,8 +91,9 @@ class MessageBubble extends StatelessWidget {
     ThemeData theme,
   ) {
     return Column(
-      crossAxisAlignment:
-          isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: isMe
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 4),
         Row(
@@ -105,8 +102,11 @@ class MessageBubble extends StatelessWidget {
           children: [
             // Reaction button for received messages - smaller
             if (isMe)
-              _buildReactionButton(context,
-                  isLeft: true, messageColors: messageColors),
+              _buildReactionButton(
+                context,
+                isLeft: true,
+                messageColors: messageColors,
+              ),
 
             // Message bubble
             Flexible(
@@ -123,8 +123,11 @@ class MessageBubble extends StatelessWidget {
 
             // Reaction button for sent messages - smaller
             if (!isMe)
-              _buildReactionButton(context,
-                  isLeft: false, messageColors: messageColors),
+              _buildReactionButton(
+                context,
+                isLeft: false,
+                messageColors: messageColors,
+              ),
           ],
         ),
 
@@ -148,8 +151,9 @@ class MessageBubble extends StatelessWidget {
       ),
       constraints: const BoxConstraints(maxWidth: 280),
       child: Column(
-        crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           // Reply widget
@@ -181,10 +185,15 @@ class MessageBubble extends StatelessWidget {
     return BorderRadius.circular(14);
   }
 
-  Widget _buildReactionButton(BuildContext context,
-      {required bool isLeft, required MessageColors messageColors}) {
+  Widget _buildReactionButton(
+    BuildContext context, {
+    required bool isLeft,
+    required MessageColors messageColors,
+  }) {
     final String? myReaction = _getMyReaction(
-        message.reactions, FirebaseAuth.instance.currentUser?.uid ?? "");
+      message.reactions,
+      FirebaseAuth.instance.currentUser?.uid ?? "",
+    );
 
     return Container(
       margin: EdgeInsets.only(
@@ -237,9 +246,9 @@ class MessageBubble extends StatelessWidget {
             ? Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                    // color:  messageColors.otherColor,
-                    borderRadius:
-                        BorderRadius.circular(SizeConst.radius / 1.5)),
+                  // color:  messageColors.otherColor,
+                  borderRadius: BorderRadius.circular(SizeConst.radius / 1.5),
+                ),
                 child: Icon(
                   CupertinoIcons.heart,
                   size: 16,
@@ -249,12 +258,10 @@ class MessageBubble extends StatelessWidget {
             : Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                    color: messageColors.otherColor,
-                    borderRadius: BorderRadius.circular(SizeConst.radius)),
-                child: Text(
-                  myReaction,
-                  style: const TextStyle(fontSize: 12),
+                  color: messageColors.otherColor,
+                  borderRadius: BorderRadius.circular(SizeConst.radius),
                 ),
+                child: Text(myReaction, style: const TextStyle(fontSize: 12)),
               ),
       ),
     );
@@ -275,14 +282,12 @@ class MessageBubble extends StatelessWidget {
             margin: const EdgeInsets.only(top: 2, right: 4),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color:
-                  Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.8),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceVariant.withOpacity(0.8),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              snapshot.data!,
-              style: const TextStyle(fontSize: 12),
-            ),
+            child: Text(snapshot.data!, style: const TextStyle(fontSize: 12)),
           );
         }
         return const SizedBox.shrink();
@@ -297,8 +302,7 @@ class MessageBubble extends StatelessWidget {
     onTap();
   }
 
-  void _downloadFile(
-      fc.FileMessage fileMessage, BuildContext context) async {
+  void _downloadFile(fc.FileMessage fileMessage, BuildContext context) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -331,29 +335,7 @@ class MessageBubble extends StatelessWidget {
       anchor.click();
       anchor.remove();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Theme.of(context).colorScheme.onError,
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Download failed',
-                  style: TextStyle(fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+      Fluttertoast.showToast(msg: "$e");
     }
   }
 
@@ -542,8 +524,8 @@ class MessageBubble extends StatelessWidget {
       size: 12,
       color: isSeen
           ? context.isLightTheme
-              ? context.primaryColor
-              : Colors.white
+                ? context.primaryColor
+                : Colors.white
           : context.secondaryTextColor,
     );
   }
@@ -553,6 +535,8 @@ class MessageBubble extends StatelessWidget {
     return DateFormat('h:mm a').format(date);
   }
 
-  static const EdgeInsets _messagePadding =
-      EdgeInsets.symmetric(horizontal: 8, vertical: 1.5);
+  static const EdgeInsets _messagePadding = EdgeInsets.symmetric(
+    horizontal: 8,
+    vertical: 1.5,
+  );
 }
